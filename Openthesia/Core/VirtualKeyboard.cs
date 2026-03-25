@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Openthesia.Settings;
@@ -7,10 +7,10 @@ namespace Openthesia.Core;
 
 public static class VirtualKeyboard
 {
-    private static int _octaveShift = 0;
+    public static int OctaveShift = 0;
     private static int _velocity = 127;
     private static bool _isKeyDown;
-    private static readonly Dictionary<ImGuiKey, int> _keyNoteMap = new()
+    public static readonly Dictionary<ImGuiKey, int> KeyNoteMap = new()
     {
         { ImGuiKey.A, 60 }, // C4
         { ImGuiKey.W, 61 }, // C#4
@@ -29,37 +29,37 @@ public static class VirtualKeyboard
 
     public static void ListenForKeyPresses()
     {
-        foreach (var key in _keyNoteMap.Keys)
+        foreach (var key in KeyNoteMap.Keys)
         {
             if (ImGui.IsKeyPressed(key, false))
             {
                 IOHandle.OnEventReceived(null,
-                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent(new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)),
+                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent(new SevenBitNumber((byte)(KeyNoteMap[key] + OctaveShift)),
                     new SevenBitNumber((byte)_velocity))));
-                DevicesManager.ODevice?.SendEvent(new NoteOnEvent(new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)), new SevenBitNumber((byte)_velocity)));
+                DevicesManager.ODevice?.SendEvent(new NoteOnEvent(new SevenBitNumber((byte)(KeyNoteMap[key] + OctaveShift)), new SevenBitNumber((byte)_velocity)));
                 _isKeyDown = true;
             }
 
             if (ImGui.IsKeyReleased(key))
             {
                 IOHandle.OnEventReceived(null,
-                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOffEvent(new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)),
+                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOffEvent(new SevenBitNumber((byte)(KeyNoteMap[key] + OctaveShift)),
                     new SevenBitNumber(0))));
-                DevicesManager.ODevice?.SendEvent(new NoteOffEvent(new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)), new SevenBitNumber(0)));
+                DevicesManager.ODevice?.SendEvent(new NoteOffEvent(new SevenBitNumber((byte)(KeyNoteMap[key] + OctaveShift)), new SevenBitNumber(0)));
                 _isKeyDown = false;
             }
         }
 
         if (ImGui.IsKeyPressed(ImGuiKey.Z, false) && !_isKeyDown)
         {
-            _octaveShift -= 12;
-            _octaveShift = Math.Clamp(_octaveShift, -36, 36);
+            OctaveShift -= 12;
+            OctaveShift = Math.Clamp(OctaveShift, -36, 36);
         }
 
         if (ImGui.IsKeyPressed(ImGuiKey.X, false) && !_isKeyDown)
         {
-            _octaveShift += 12;
-            _octaveShift = Math.Clamp(_octaveShift, -36, 36);
+            OctaveShift += 12;
+            OctaveShift = Math.Clamp(OctaveShift, -36, 36);
         }
 
         if (ImGui.IsKeyPressed(ImGuiKey.C, false))

@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Openthesia.Core;
 using Openthesia.Core.Plugins;
 using Openthesia.Settings;
@@ -10,7 +10,7 @@ namespace Openthesia.Ui.Windows;
 
 public class HomeWindow : ImGuiWindow
 {
-    private const string _title = "OPENTHESIA";
+    private const string _title = "OPENTHESIA NATHAN";
     private Vector2 _logoSize = new(250, 250);
     private Vector2 _btnHoverOffset = new(2);
     private Vector2 _titleShadowOffset = new(3);

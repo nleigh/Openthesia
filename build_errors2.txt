@@ -1,0 +1,7 @@
+C:\Users\nleig\Documents\GitHub\Openthesia\Openthesia\Openthesia\Ui\ScreenCanvas.cs(468,23): error CS7036: There is no argument given that corresponds to the required parameter 'note' of 'ScreenCanvas.GetSharpColor(int, Note)' [C:\Users\nleig\Documents\GitHub\Openthesia\Openthesia\Openthesia\Openthesia.csproj]
+
+Build FAILED.
+    142 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:00.75

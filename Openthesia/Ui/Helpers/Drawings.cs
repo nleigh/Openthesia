@@ -1,8 +1,9 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Melanchall.DryWetMidi.Interaction;
 using Openthesia.Enums;
 using Openthesia.Settings;
 using System.Numerics;
+using System.Linq;
 
 namespace Openthesia.Ui.Helpers;
 
@@ -101,5 +102,37 @@ public class Drawings
             default:
                 return note.NoteName.ToString();
         }
+    }
+
+    public static void AddTextOutlined(ImDrawListPtr drawList, Vector2 pos, uint textColor, uint outlineColor, string text, float thickness = 1.0f)
+    {
+        drawList.AddText(pos + new Vector2(-thickness, 0), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, 0), outlineColor, text);
+        drawList.AddText(pos + new Vector2(0, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(0, thickness), outlineColor, text);
+        
+        drawList.AddText(pos + new Vector2(-thickness, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(-thickness, thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, thickness), outlineColor, text);
+
+        drawList.AddText(pos, textColor, text);
+    }
+
+    public static string GetDetectedChord()
+    {
+        var keys = Openthesia.Core.IOHandle.PressedKeys.ToList();
+        if (keys.Count < 3) return "";
+        
+        try 
+        {
+            var noteNames = keys.Select(k => Melanchall.DryWetMidi.MusicTheory.Note.Get((Melanchall.DryWetMidi.Common.SevenBitNumber)k).NoteName).Distinct().ToList();
+            var chord = new Melanchall.DryWetMidi.MusicTheory.Chord(noteNames);
+            var chordNames = chord.GetNames();
+            if (chordNames.Any())
+                return chordNames.First();
+        }
+        catch { }
+        return "";
     }
 }

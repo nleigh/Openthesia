@@ -1,4 +1,4 @@
-﻿using Veldrid.Sdl2;
+using Veldrid.Sdl2;
 using Veldrid;
 using System.Diagnostics;
 using Veldrid.StartupUtilities;
@@ -26,7 +26,7 @@ class Program
         User32.SetProcessDPIAware();
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Maximized, $"Openthesia {ProgramData.ProgramVersion}"),
+            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Maximized, $"Openthesia Nathan {ProgramData.ProgramVersion}"),
             new GraphicsDeviceOptions(false, null, true, ResourceBindingModel.Improved, true, true),
             out _window,
             out _gd);
