@@ -15,7 +15,9 @@ public class SongState
     public string KeySignature { get; set; }
     public string Artist { get; set; }
     public string Title { get; set; }
+    public string Album { get; set; }
     public int? Year { get; set; }
+    public int? Bpm { get; set; }
     public string ThumbnailPath { get; set; }
     public bool MetadataFetched { get; set; }
 }

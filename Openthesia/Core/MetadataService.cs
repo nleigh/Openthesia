@@ -75,6 +75,12 @@ public static class MetadataService
             var duration = midiFile.GetDuration<MetricTimeSpan>();
             songState.LengthSeconds = duration.TotalSeconds;
 
+            var tempoChange = tempoMap.GetTempoChanges().FirstOrDefault();
+            if (tempoChange != null)
+            {
+                songState.Bpm = (int)Math.Round(tempoChange.Value.BeatsPerMinute);
+            }
+
             var keySignatureEvent = midiFile.GetTrackChunks()
                 .SelectMany(c => c.Events)
                 .OfType<KeySignatureEvent>()
@@ -103,6 +109,7 @@ public static class MetadataService
                 var result = json["results"][0];
                 songState.Artist = result["artistName"]?.ToString();
                 songState.Title = result["trackName"]?.ToString() ?? title;
+                songState.Album = result["collectionName"]?.ToString();
 
                 if (DateTime.TryParse(result["releaseDate"]?.ToString(), out var releaseDate))
                 {
@@ -112,6 +119,8 @@ public static class MetadataService
                 string artworkUrl = result["artworkUrl100"]?.ToString();
                 if (!string.IsNullOrEmpty(artworkUrl))
                 {
+                    // Convert 100x100 to 600x600 for better quality
+                    artworkUrl = artworkUrl.Replace("100x100bb", "600x600bb");
                     try
                     {
                         var imgBytes = await _httpClient.GetByteArrayAsync(artworkUrl);

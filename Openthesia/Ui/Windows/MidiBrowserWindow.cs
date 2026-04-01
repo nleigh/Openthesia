@@ -14,6 +14,7 @@ public class MidiBrowserWindow : ImGuiWindow
     private int _sortColumnIndex = 0;
     private int _sortDirection = 1;
     private bool _favoritesOnly = false;
+    private char? _scrollToLetter = null;
 
     public MidiBrowserWindow()
     {
@@ -72,14 +73,17 @@ public class MidiBrowserWindow : ImGuiWindow
                 RenderSearchBar();
                 ImGui.Separator();
 
-                if (ImGui.BeginChild("Midi file list", ImGui.GetContentRegionAvail()))
+                var availRegion = ImGui.GetContentRegionAvail();
+                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f, availRegion.Y)))
                 {
-                    if (ImGui.BeginTable("File Table", 8, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
+                    if (ImGui.BeginTable("File Table", 10, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
                     {
-                        ImGui.TableSetupColumn("Art", ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.WidthFixed, 40f);
+                        ImGui.TableSetupColumn("Art", ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.WidthFixed, 54f);
                         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.DefaultSort);
                         ImGui.TableSetupColumn("Artist", ImGuiTableColumnFlags.WidthStretch);
+                        ImGui.TableSetupColumn("Album", ImGuiTableColumnFlags.WidthStretch);
                         ImGui.TableSetupColumn("Length", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupColumn("BPM", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Year", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Key", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Plays", ImGuiTableColumnFlags.WidthFixed);
@@ -119,18 +123,51 @@ public class MidiBrowserWindow : ImGuiWindow
                             if (_favoritesOnly && !songState.IsFavorite)
                                 continue;
 
-                            ImGui.TableNextRow();
+                            bool shouldScrollHere = false;
+                            if (_scrollToLetter.HasValue)
+                            {
+                                string compareStr = "";
+                                if (_sortColumnIndex == 1) compareStr = Path.GetFileName(file);
+                                else if (_sortColumnIndex == 2) compareStr = songState.Artist ?? "";
+                                else if (_sortColumnIndex == 3) compareStr = songState.Album ?? "";
+                                else compareStr = Path.GetFileName(file); // fallback to Name
+
+                                if (compareStr.Length > 0)
+                                {
+                                    char firstChar = char.ToUpperInvariant(compareStr[0]);
+                                    if (_scrollToLetter == '#')
+                                    {
+                                        if (!char.IsLetter(firstChar)) shouldScrollHere = true;
+                                    }
+                                    else if (firstChar == _scrollToLetter.Value)
+                                    {
+                                        shouldScrollHere = true;
+                                    }
+                                }
+                            }
+
+                            ImGui.TableNextRow(ImGuiTableRowFlags.None, 54f);
+                            if (shouldScrollHere)
+                            {
+                                ImGui.SetScrollHereY(0.0f);
+                                _scrollToLetter = null;
+                            }
                             
                             // Art Column
                             ImGui.TableSetColumnIndex(0);
                             nint texPtr = TextureCache.GetTexture(songState.ThumbnailPath);
                             if (texPtr != IntPtr.Zero)
-                                ImGui.Image(texPtr, new Vector2(30, 30));
+                                ImGui.Image(texPtr, new Vector2(50, 50));
                             else
-                                ImGui.Text(FontAwesome6.Image);
+                            {
+                                ImGui.PushFont(FontController.Font16_Icon16);
+                                ImGui.Text($"{FontAwesome6.Image}");
+                                ImGui.PopFont();
+                            }
 
                             // Name Column
                             ImGui.TableSetColumnIndex(1);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f); // center vertically against large image
                             if (ImGui.Selectable(Path.GetFileName(file) + "##" + file, false, ImGuiSelectableFlags.SpanAllColumns))
                             {
                                 GameStateManager.IncrementPlayCount(file);
@@ -144,10 +181,17 @@ public class MidiBrowserWindow : ImGuiWindow
 
                             // Artist Column
                             ImGui.TableSetColumnIndex(2);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.Artist ?? "Unknown");
 
-                            // Length Column
+                            // Album Column
                             ImGui.TableSetColumnIndex(3);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
+                            ImGui.Text(songState.Album ?? "-");
+
+                            // Length Column
+                            ImGui.TableSetColumnIndex(4);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             if (songState.LengthSeconds > 0)
                             {
                                 TimeSpan t = TimeSpan.FromSeconds((int)songState.LengthSeconds);
@@ -158,20 +202,29 @@ public class MidiBrowserWindow : ImGuiWindow
                                 ImGui.Text("-");
                             }
 
+                            // BPM Column
+                            ImGui.TableSetColumnIndex(5);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
+                            ImGui.Text(songState.Bpm > 0 ? songState.Bpm.ToString() : "-");
+
                             // Year Column
-                            ImGui.TableSetColumnIndex(4);
+                            ImGui.TableSetColumnIndex(6);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.Year > 0 ? songState.Year.ToString() : "-");
 
                             // Key Column
-                            ImGui.TableSetColumnIndex(5);
+                            ImGui.TableSetColumnIndex(7);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.KeySignature ?? "-");
 
                             // Plays Column
-                            ImGui.TableSetColumnIndex(6);
+                            ImGui.TableSetColumnIndex(8);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.PlayCount.ToString());
 
                             // Fav Column
-                            ImGui.TableSetColumnIndex(7);
+                            ImGui.TableSetColumnIndex(9);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             if (songState.IsFavorite) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
                             if (ImGui.Button($"{(songState.IsFavorite ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart)}##{file}"))
                             {
@@ -182,6 +235,32 @@ public class MidiBrowserWindow : ImGuiWindow
 
                         ImGui.EndTable();
                     }
+                    ImGui.EndChild();
+                }
+
+                ImGui.SameLine();
+                if (ImGui.BeginChild("Alphabet Scroll", new Vector2(40f, availRegion.Y)))
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(1f, 1f, 1f, 0.1f));
+                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(1f, 1f, 1f, 0.2f));
+                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                    ImGui.PushFont(FontController.Font16_Icon16);
+                    
+                    float childHeight = ImGui.GetContentRegionAvail().Y;
+                    var letters = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                    float btnHeight = childHeight / letters.Length;
+                    
+                    foreach(var letter in letters)
+                    {
+                        if (ImGui.Button(letter.ToString(), new Vector2(40f, btnHeight)))
+                        {
+                            _scrollToLetter = letter;
+                        }
+                    }
+                    ImGui.PopFont();
+                    ImGui.PopStyleVar();
+                    ImGui.PopStyleColor(3);
                     ImGui.EndChild();
                 }
                 ImGui.EndChild();
@@ -198,11 +277,13 @@ public class MidiBrowserWindow : ImGuiWindow
         {
             1 => _sortDirection == 1 ? midiFiles.OrderBy(p => Path.GetFileName(p)).ToList() : midiFiles.OrderByDescending(p => Path.GetFileName(p)).ToList(), // Name
             2 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Artist).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Artist).ToList(), // Artist
-            3 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).LengthSeconds).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).LengthSeconds).ToList(), // Length
-            4 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Year).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Year).ToList(), // Year
-            5 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).KeySignature).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).KeySignature).ToList(), // Key
-            6 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).PlayCount).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).PlayCount).ToList(), // Plays
-            7 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).IsFavorite).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).IsFavorite).ToList(), // Fav
+            3 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Album).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Album).ToList(), // Album
+            4 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).LengthSeconds).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).LengthSeconds).ToList(), // Length
+            5 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Bpm).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Bpm).ToList(), // BPM
+            6 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Year).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Year).ToList(), // Year
+            7 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).KeySignature).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).KeySignature).ToList(), // Key
+            8 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).PlayCount).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).PlayCount).ToList(), // Plays
+            9 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).IsFavorite).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).IsFavorite).ToList(), // Fav
             _ => midiFiles
         };
     }
