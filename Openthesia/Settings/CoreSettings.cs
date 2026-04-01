@@ -1,4 +1,4 @@
-﻿using Openthesia.Enums;
+using Openthesia.Enums;
 using Syroot.Windows.IO;
 
 namespace Openthesia.Settings;
@@ -28,6 +28,12 @@ public static class CoreSettings
 
     private static int _noteRoundness = 7;
     public static ref int NoteRoundness => ref _noteRoundness;
+
+    // Visual Settings
+    public static float AnticipationApproachWindow = 250f;
+    public static float UpcomingChordStrikeWindow = 0.15f;
+    public static float UpcomingChordTextXOffset = 150f;
+    public static float UpcomingChordTextYOffset = 50f;
 
     private static int _waveOutLatency = 75;
     public static ref int WaveOutLatency => ref _waveOutLatency;

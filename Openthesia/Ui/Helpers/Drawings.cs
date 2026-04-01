@@ -119,9 +119,18 @@ public class Drawings
         drawList.AddText(pos, textColor, text);
     }
 
+    private static List<int> _cachedPressedKeys = new List<int>();
+    private static string _cachedChord = "";
+
     public static string GetDetectedChord()
     {
         var keys = Openthesia.Core.IOHandle.PressedKeys.ToList();
+        if (keys.SequenceEqual(_cachedPressedKeys))
+            return _cachedChord;
+
+        _cachedPressedKeys = keys;
+        _cachedChord = "";
+
         if (keys.Count < 3) return "";
         
         try 
@@ -130,9 +139,10 @@ public class Drawings
             var chord = new Melanchall.DryWetMidi.MusicTheory.Chord(noteNames);
             var chordNames = chord.GetNames();
             if (chordNames.Any())
-                return chordNames.First();
+                _cachedChord = chordNames.First();
         }
         catch { }
-        return "";
+
+        return _cachedChord;
     }
 }

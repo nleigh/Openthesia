@@ -1,4 +1,4 @@
-﻿using Melanchall.DryWetMidi.Multimedia;
+using Melanchall.DryWetMidi.Multimedia;
 using Newtonsoft.Json;
 using Openthesia.Core.Plugins;
 using Openthesia.Core.SoundFonts;
@@ -20,6 +20,7 @@ public static class ProgramData
         Directory.CreateDirectory(Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia"));
         Directory.CreateDirectory(HandsDataPath);
         LoadSettings();
+        GameStateManager.Initialize();
         ImGuiTheme.PushTheme();
 
         // Always create the SoundFonts directory if it doesn't exist (this is mainly for when building from source)

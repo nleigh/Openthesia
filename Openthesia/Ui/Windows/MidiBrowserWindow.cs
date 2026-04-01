@@ -1,4 +1,4 @@
-﻿using IconFonts;
+using IconFonts;
 using ImGuiNET;
 using Openthesia.Core;
 using Openthesia.Core.Midi;
@@ -11,7 +11,9 @@ namespace Openthesia.Ui.Windows;
 public class MidiBrowserWindow : ImGuiWindow
 {
     private string _searchBuffer = string.Empty;
-    private bool _alphabeticOrder = true;
+    private enum SortMode { Alphabetic, ReverseAlphabetic, MostPlayed, LeastPlayed }
+    private SortMode _sortMode = SortMode.Alphabetic;
+    private bool _favoritesOnly = false;
 
     public MidiBrowserWindow()
     {
@@ -23,11 +25,43 @@ public class MidiBrowserWindow : ImGuiWindow
     {
         if (ImGui.BeginChild("Searchbar container", new(_io.DisplaySize.X / 1.2f, 50)))
         {
-            string orderIcon = _alphabeticOrder ? FontAwesome6.ArrowDownAZ : FontAwesome6.ArrowUpAZ;
-            if (ImGui.Button(orderIcon))
+            string sortIcon = _sortMode switch
             {
-                _alphabeticOrder = !_alphabeticOrder;
+                SortMode.Alphabetic => FontAwesome6.ArrowDownAZ,
+                SortMode.ReverseAlphabetic => FontAwesome6.ArrowUpAZ,
+                SortMode.MostPlayed => FontAwesome6.ArrowDown91,
+                SortMode.LeastPlayed => FontAwesome6.ArrowUp19,
+                _ => FontAwesome6.ArrowDownAZ
+            };
+
+            if (ImGui.Button(sortIcon))
+            {
+                _sortMode = (SortMode)(((int)_sortMode + 1) % 4);
             }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip($"Sort Mode: {_sortMode}");
+            }
+
+            ImGui.SameLine();
+            string favIcon = _favoritesOnly ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart;
+            if (_favoritesOnly)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
+            }
+            if (ImGui.Button(favIcon))
+            {
+                _favoritesOnly = !_favoritesOnly;
+            }
+            if (_favoritesOnly)
+            {
+                ImGui.PopStyleColor();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Toggle Favorites Only");
+            }
+
             ImGui.SameLine();
             ImGui.InputTextWithHint($"Search {FontAwesome6.MagnifyingGlass}", "Search midi file...", ref _searchBuffer, 1000);
             ImGui.EndChild();
@@ -59,9 +93,12 @@ public class MidiBrowserWindow : ImGuiWindow
 
                 if (ImGui.BeginChild("Midi file list", ImGui.GetContentRegionAvail()))
                 {
-                    if (ImGui.BeginTable("File Table", 1, ImGuiTableFlags.PadOuterX))
+                    if (ImGui.BeginTable("File Table", 3, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.SizingFixedFit))
                     {
-                        ImGui.TableSetupColumn("Name");
+                        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
+                        ImGui.TableSetupColumn("Plays");
+                        ImGui.TableSetupColumn("Fav");
+                        ImGui.TableHeadersRow();
 
                         List<string> midiFiles = new();
                         foreach (var midiPath in MidiPathsManager.MidiPaths)
@@ -75,10 +112,18 @@ public class MidiBrowserWindow : ImGuiWindow
                             if (!Path.GetFileName(file).ToLower().Contains(_searchBuffer.ToLower()) && _searchBuffer != string.Empty)
                                 continue;
 
+                            SongState songState = GameStateManager.GetSongState(file);
+
+                            if (_favoritesOnly && !songState.IsFavorite)
+                                continue;
+
                             ImGui.TableNextRow();
+                            
+                            // Name Column
                             ImGui.TableSetColumnIndex(0);
                             if (ImGui.Selectable(Path.GetFileName(file)))
                             {
+                                GameStateManager.IncrementPlayCount(file);
                                 MidiFileHandler.LoadMidiFile(file);
                                 // we start and stop the playback so we can change the time before playing the song,
                                 // else falling notes and keypresses are mismatched
@@ -86,6 +131,19 @@ public class MidiBrowserWindow : ImGuiWindow
                                 MidiPlayer.Playback.Stop();
                                 WindowsManager.SetWindow(Enums.Windows.ModeSelection);
                             }
+
+                            // Plays Column
+                            ImGui.TableSetColumnIndex(1);
+                            ImGui.Text(songState.PlayCount.ToString());
+
+                            // Fav Column
+                            ImGui.TableSetColumnIndex(2);
+                            if (songState.IsFavorite) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
+                            if (ImGui.Button($"{(songState.IsFavorite ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart)}##{file}"))
+                            {
+                                GameStateManager.SetFavorite(file, !songState.IsFavorite);
+                            }
+                            if (songState.IsFavorite) ImGui.PopStyleColor();
                         }
 
                         ImGui.EndTable();
@@ -102,7 +160,14 @@ public class MidiBrowserWindow : ImGuiWindow
 
     private List<string> SortFiles(List<string> midiFiles)
     {
-        return _alphabeticOrder ? midiFiles.OrderBy(path => Path.GetFileName(path)).ToList() : midiFiles.OrderByDescending(path => Path.GetFileName(path)).ToList();
+        return _sortMode switch
+        {
+            SortMode.Alphabetic => midiFiles.OrderBy(path => Path.GetFileName(path)).ToList(),
+            SortMode.ReverseAlphabetic => midiFiles.OrderByDescending(path => Path.GetFileName(path)).ToList(),
+            SortMode.MostPlayed => midiFiles.OrderByDescending(path => GameStateManager.GetSongState(path).PlayCount).ThenBy(path => Path.GetFileName(path)).ToList(),
+            SortMode.LeastPlayed => midiFiles.OrderBy(path => GameStateManager.GetSongState(path).PlayCount).ThenBy(path => Path.GetFileName(path)).ToList(),
+            _ => midiFiles
+        };
     }
 
     protected override void OnImGui()
