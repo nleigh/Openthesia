@@ -107,6 +107,9 @@ public class MidiBrowserWindow : ImGuiWindow
                                 continue;
 
                             SongState songState = GameStateManager.GetSongState(file);
+                            
+                            // Queue metadata fetch in background
+                            MetadataService.QueueMetadataFetch(file);
 
                             if (_favoritesOnly && !songState.IsFavorite)
                                 continue;

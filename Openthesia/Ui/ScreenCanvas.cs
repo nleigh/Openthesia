@@ -811,8 +811,8 @@ public class ScreenCanvas
 
     private static void DrawPlaybackControls()
     {
-        ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X / 2 - ImGuiUtils.FixedSize(new Vector2(140)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(50)).Y));
-        if (ImGui.BeginChild("Player controls", ImGuiUtils.FixedSize(new Vector2(280, 50)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X / 2 - ImGuiUtils.FixedSize(new Vector2(165)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(50)).Y));
+        if (ImGui.BeginChild("Player controls", ImGuiUtils.FixedSize(new Vector2(335, 50)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             var playColor = !MidiPlayer.IsTimerRunning ? Vector4.One : ThemeManager.RightHandCol;
 
@@ -886,6 +886,20 @@ public class ScreenCanvas
                 }
             }
             ImGui.PopStyleColor();
+
+            ImGui.SameLine();
+
+            // FAVORITE BUTTON
+            if (!string.IsNullOrEmpty(MidiFileData.FilePath))
+            {
+                SongState songState = GameStateManager.GetSongState(MidiFileData.FilePath);
+                if (songState.IsFavorite) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
+                if (ImGui.Button($"{(songState.IsFavorite ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart)}##fav", new(ImGuiUtils.FixedSize(new Vector2(50)).X, ImGui.GetWindowSize().Y)))
+                {
+                    GameStateManager.SetFavorite(MidiFileData.FilePath, !songState.IsFavorite);
+                }
+                if (songState.IsFavorite) ImGui.PopStyleColor();
+            }
 
             ImGui.PopFont();
             ImGui.EndChild();
@@ -1087,20 +1101,6 @@ public class ScreenCanvas
         if (!playMode)
         {
             DrawHandToggleButtons();
-
-            if (!string.IsNullOrEmpty(MidiFileData.FilePath))
-            {
-                SongState songState = GameStateManager.GetSongState(MidiFileData.FilePath);
-                ImGui.PushFont(FontController.Font16_Icon16);
-                ImGui.SetCursorScreenPos(new(ImGuiUtils.FixedSize(new Vector2(230)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(110)).Y));
-                if (songState.IsFavorite) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
-                if (ImGui.Button($"{(songState.IsFavorite ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart)}##fav", ImGuiUtils.FixedSize(new Vector2(35, 35))))
-                {
-                    GameStateManager.SetFavorite(MidiFileData.FilePath, !songState.IsFavorite);
-                }
-                if (songState.IsFavorite) ImGui.PopStyleColor();
-                ImGui.PopFont();
-            }
         }
 
         if (CoreSettings.SoundEngine == SoundEngine.SoundFonts)
