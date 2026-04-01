@@ -1,4 +1,4 @@
-﻿using IconFonts;
+using IconFonts;
 using ImGuiNET;
 using Melanchall.DryWetMidi.Multimedia;
 using NAudio.Wave;
@@ -178,6 +178,31 @@ public class SettingsWindow : ImGuiWindow
                 }
             }
         }
+
+        // DATA & CACHE
+        ImGui.Dummy(new(50));
+        ImGui.Text($"DATA & CACHE {FontAwesome6.Database}");
+        ImGui.Spacing();
+
+        if (ImGui.Button($"{FontAwesome6.TrashCan} Clear Metadata Cache", ImGuiUtils.FixedSize(new Vector2(250, 40))))
+        {
+            TextureCache.ClearCache();
+            GameStateManager.State.Songs.Clear();
+            GameStateManager.SaveState();
+
+            string cacheDir = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "Cache", "Thumbnails");
+            if (Directory.Exists(cacheDir))
+            {
+                foreach (var file in Directory.GetFiles(cacheDir))
+                {
+                    try { File.Delete(file); } catch { }
+                }
+            }
+            User32.MessageBox(IntPtr.Zero, "Metadata cache cleared successfully.", "Success", User32.MB_FLAGS.MB_ICONINFORMATION | User32.MB_FLAGS.MB_TOPMOST);
+        }
+        Drawings.Tooltip("Clears all fetched metadata (Album, BPM, Artworks, Plays, Favorites) and downloaded thumbnails to free up space or fix incorrect data.");
+
+        ImGui.Dummy(new(50));
 
         // SOUND
         ImGui.Text($"SOUND {FontAwesome6.Music}");
