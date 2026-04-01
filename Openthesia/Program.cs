@@ -15,9 +15,9 @@ class Program
 {
     public static bool IsRunning = true;
     public static Sdl2Window _window;
-    private static GraphicsDevice _gd;
+    public static GraphicsDevice _gd;
     private static CommandList _cl;
-    private static ImGuiController _controller;
+    public static ImGuiController _controller;
     private static Vector3 _clearColor = new(0.45f, 0.55f, 0.6f);
 
     [STAThread]
