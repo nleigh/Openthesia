@@ -16,6 +16,7 @@ public class MidiBrowserWindow : ImGuiWindow
     private bool _favoritesOnly = false;
     private char? _scrollToLetter = null;
     private string _selectedFile = string.Empty;
+    private bool _shouldScrollToSelected = false;
 
     public MidiBrowserWindow()
     {
@@ -110,8 +111,19 @@ public class MidiBrowserWindow : ImGuiWindow
                             {
                                 if (sortSpecs.SpecsCount > 0)
                                 {
-                                    _sortColumnIndex = sortSpecs.Specs.ColumnIndex;
-                                    _sortDirection = sortSpecs.Specs.SortDirection == ImGuiSortDirection.Descending ? -1 : 1;
+                                    if (sortSpecs.SpecsDirty)
+                                    {
+                                        _sortColumnIndex = sortSpecs.Specs.ColumnIndex;
+                                        _sortDirection = sortSpecs.Specs.SortDirection == ImGuiSortDirection.Descending ? -1 : 1;
+                                        
+                                        if (!string.IsNullOrEmpty(_selectedFile))
+                                        {
+                                            _shouldScrollToSelected = true;
+                                            _scrollToLetter = null;
+                                        }
+                                        
+                                        sortSpecs.SpecsDirty = false;
+                                    }
                                 }
                             }
                         }
@@ -137,7 +149,13 @@ public class MidiBrowserWindow : ImGuiWindow
                                 continue;
 
                             bool shouldScrollHere = false;
-                            if (_scrollToLetter.HasValue)
+                            
+                            if (_shouldScrollToSelected && file == _selectedFile)
+                            {
+                                shouldScrollHere = true;
+                                _shouldScrollToSelected = false;
+                            }
+                            else if (_scrollToLetter.HasValue)
                             {
                                 string compareStr = "";
                                 if (_sortColumnIndex == 1) compareStr = Path.GetFileName(file);
@@ -162,8 +180,10 @@ public class MidiBrowserWindow : ImGuiWindow
                             ImGui.TableNextRow(ImGuiTableRowFlags.None, 54f);
                             if (shouldScrollHere)
                             {
-                                ImGui.SetScrollHereY(0.0f);
+                                // Focus specifically on this item
+                                ImGui.SetScrollHereY(0.5f);
                                 _scrollToLetter = null;
+                                _shouldScrollToSelected = false;
                             }
                             
                             // Play Column
