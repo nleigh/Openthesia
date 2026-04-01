@@ -1,4 +1,4 @@
-﻿using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using Openthesia.Core.FileDialogs;
@@ -13,6 +13,7 @@ public static class MidiFileHandler
     {
         var midiFile = MidiFile.Read(filePath);
         MidiFileData.FileName = Path.GetFileName(filePath);
+        MidiFileData.FilePath = filePath;
         LoadMidiFile(midiFile);
         Program._window.Title = $"Openthesia ({MidiFileData.FileName})";
     }
