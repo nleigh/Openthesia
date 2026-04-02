@@ -8,7 +8,7 @@ namespace Openthesia.Core
 {
     public static class TextureCache
     {
-        private static ConcurrentDictionary<string, IntPtr> _cache = new ConcurrentDictionary<string, IntPtr>();
+        private static ConcurrentDictionary<string, (IntPtr ptr, Veldrid.Texture tex)> _cache = new ConcurrentDictionary<string, (IntPtr, Veldrid.Texture)>();
         private static ConcurrentDictionary<string, bool> _loading = new ConcurrentDictionary<string, bool>();
         private static ConcurrentQueue<(string filePath, ImageSharpTexture image)> _bindingQueue = new ConcurrentQueue<(string, ImageSharpTexture)>();
 
@@ -26,14 +26,14 @@ namespace Openthesia.Core
                     {
                         var deviceTexture = readyData.image.CreateDeviceTexture(Program._gd, Program._gd.ResourceFactory);
                         var ptr = Program._controller.GetOrCreateImGuiBinding(Program._gd.ResourceFactory, deviceTexture);
-                        _cache[readyData.filePath] = ptr;
+                        _cache[readyData.filePath] = (ptr, deviceTexture);
                     }
                     catch { }
                 }
             }
 
-            if (_cache.TryGetValue(filePath, out IntPtr textureId))
-                return textureId;
+            if (_cache.TryGetValue(filePath, out var cachedData))
+                return cachedData.ptr;
 
             if (_loading.TryAdd(filePath, true))
             {
@@ -54,6 +54,14 @@ namespace Openthesia.Core
 
         public static void ClearCache()
         {
+            foreach (var textureTuple in _cache.Values)
+            {
+                try
+                {
+                    textureTuple.tex.Dispose();
+                }
+                catch { }
+            }
             _cache.Clear();
             _loading.Clear();
             _bindingQueue.Clear();

@@ -1,5 +1,6 @@
 using IconFonts;
 using ImGuiNET;
+using Syroot.Windows.IO;
 using Melanchall.DryWetMidi.Multimedia;
 using NAudio.Wave;
 using System.Numerics;
