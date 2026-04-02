@@ -234,6 +234,15 @@ public class MidiBrowserWindow : ImGuiWindow
                                 PlaySong(file, songState);
                             }
 
+                            if (ImGui.BeginPopupContextItem($"context_{file}"))
+                            {
+                                if (ImGui.MenuItem($"{FontAwesome6.ArrowsRotate} Refresh this song's metadata"))
+                                {
+                                    MetadataService.QueueMetadataFetch(file, true);
+                                }
+                                ImGui.EndPopup();
+                            }
+
                             // Artist Column
                             ImGui.TableSetColumnIndex(3);
                             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
