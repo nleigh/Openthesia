@@ -1011,23 +1011,32 @@ public class ScreenCanvas
             else
                 _comboFallSpeed = false;
 
-            // PLAYBACK SPEED DROPDOWN LIST
+            // PLAYBACK SPEED SLIDER
             ImGui.SetCursorScreenPos(new(ImGui.GetIO().DisplaySize.X - ImGuiUtils.FixedSize(new Vector2(220)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(155)).Y));
-            if (ImGui.BeginCombo("##Playback speed", $"{MidiPlayer.Playback.Speed}x",
-                ImGuiComboFlags.WidthFitPreview | ImGuiComboFlags.HeightLarge))
+            float playbackSpeed = (float)MidiPlayer.Playback.Speed;
+            ImGui.SetNextItemWidth(ImGuiUtils.FixedSize(new Vector2(150)).X);
+            if (ImGui.SliderFloat("##PlaybackSpeed", ref playbackSpeed, 0.25f, 2.0f, $"{(int)(playbackSpeed * 100)}%%"))
             {
                 _comboPlaybackSpeed = true;
-                for (float i = 0.25f; i <= 4; i += 0.25f)
-                {
-                    if (ImGui.Selectable($"{i}x"))
-                    {
-                        MidiPlayer.Playback.Speed = i;
-                    }
-                }
-                ImGui.EndCombo();
+                MidiPlayer.Playback.Speed = playbackSpeed;
             }
             else
                 _comboPlaybackSpeed = false;
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Playback Speed (use +/- keys)");
+
+            // Keyboard speed control
+            if (!CoreSettings.KeyboardInput)
+            {
+                if (ImGui.IsKeyPressed(ImGuiKey.Equal) || ImGui.IsKeyPressed(ImGuiKey.KeypadAdd))
+                {
+                    MidiPlayer.Playback.Speed = Math.Min(2.0, MidiPlayer.Playback.Speed + 0.05);
+                }
+                if (ImGui.IsKeyPressed(ImGuiKey.Minus) || ImGui.IsKeyPressed(ImGuiKey.KeypadSubtract))
+                {
+                    MidiPlayer.Playback.Speed = Math.Max(0.25, MidiPlayer.Playback.Speed - 0.05);
+                }
+            }
         }
     }
 
