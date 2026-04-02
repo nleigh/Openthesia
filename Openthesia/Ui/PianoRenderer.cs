@@ -37,6 +37,7 @@ public class PianoRenderer
 
         /* Check if a black key is pressed */
         bool blackKeyClicked = false;
+        bool blackKeyHovered = false;
         for (int key = 0; key < 52; key++)
         {
             if (KeysUtils.HasBlack(key))
@@ -44,9 +45,13 @@ public class PianoRenderer
                 Vector2 min = new(P.X + key * Width + Width * 3 / 4, P.Y);
                 Vector2 max = new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f);
 
-                if (ImGui.IsMouseHoveringRect(min, max) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (ImGui.IsMouseHoveringRect(min, max))
                 {
-                    blackKeyClicked = true;
+                    blackKeyHovered = true;
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    {
+                        blackKeyClicked = true;
+                    }
                 }
 
                 cur_key += 2;
@@ -59,17 +64,26 @@ public class PianoRenderer
 
         cur_key = 21;
         int cCount = 1;
+        string[] _names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
         for (int key = 0; key < 52; key++)
         {
             uint col = _white;
 
-            if (ImGui.IsMouseHoveringRect(new(P.X + key * Width, P.Y), new(P.X + key * Width + Width, P.Y + Height)) && ImGui.IsMouseClicked(ImGuiMouseButton.Left)
-                && !CoreSettings.KeyboardInput && !blackKeyClicked)
+            if (ImGui.IsMouseHoveringRect(new(P.X + key * Width, P.Y), new(P.X + key * Width + Width, P.Y + Height)))
             {
-                // on key mouse press
-                IOHandle.OnEventReceived(null,
-                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
-                DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                if (!blackKeyHovered)
+                {
+                    ImGui.SetTooltip($"{_names[cur_key % 12]}{(cur_key / 12) - 1}");
+                }
+
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput && !blackKeyClicked)
+                {
+                    // on key mouse press
+                    IOHandle.OnEventReceived(null,
+                        new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
+                    DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                }
             }
 
             if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
@@ -115,7 +129,6 @@ public class PianoRenderer
             if (WhiteNoteToKey.Count < 52)
                 WhiteNoteToKey.Add((SevenBitNumber)cur_key, key);
 
-            string[] _names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
             var nName = _names[cur_key % 12];
             var tPos = new Vector2(P.X + key * Width + (Width / 2 - ImGui.CalcTextSize(nName).X / 2), P.Y + Height - 25 * FontController.DSF);
             ImGui.GetForegroundDrawList().AddText(tPos + new Vector2(1), ImGui.GetColorU32(new Vector4(0,0,0,0.8f)), nName);
@@ -150,12 +163,16 @@ public class PianoRenderer
                 uint col = ImGui.GetColorU32(Vector4.One);
 
                 if (ImGui.IsMouseHoveringRect(new(P.X + key * Width + Width * 3 / 4, P.Y),
-                    new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f)) && ImGui.IsMouseClicked(ImGuiMouseButton.Left)
-                    && !CoreSettings.KeyboardInput)
+                    new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f)))
                 {
-                    IOHandle.OnEventReceived(null,
-                        new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
-                    DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                    ImGui.SetTooltip($"{_names[cur_key % 12]}{(cur_key / 12) - 1}");
+
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
+                    {
+                        IOHandle.OnEventReceived(null,
+                            new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
+                        DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                    }
                 }
 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
@@ -203,7 +220,6 @@ public class PianoRenderer
                         borderCol, 0, 0, 3.0f);
                 }
 
-                string[] _names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
                 var nName = _names[cur_key % 12];
                 var tPos = new Vector2(P.X + key * Width + Width - ImGui.CalcTextSize(nName).X / 2, P.Y + Height / 1.5f - 25 * FontController.DSF);
                 ImGui.GetForegroundDrawList().AddText(tPos + new Vector2(1), ImGui.GetColorU32(new Vector4(0,0,0,0.8f)), nName);
