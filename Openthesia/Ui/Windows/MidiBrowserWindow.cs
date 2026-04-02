@@ -18,15 +18,36 @@ public class MidiBrowserWindow : ImGuiWindow
     private string _selectedFile = string.Empty;
     private bool _shouldScrollToSelected = false;
 
-    // Cached file list to avoid scanning the filesystem every frame
+    // Cached file list with FileSystemWatcher for instant updates
     private List<string> _cachedMidiFiles = new();
-    private DateTime _lastFileListRefresh = DateTime.MinValue;
-    private static readonly TimeSpan FileListCacheDuration = TimeSpan.FromSeconds(5);
+    private volatile bool _fileListDirty = true;
+    private List<FileSystemWatcher> _watchers = new();
 
     public MidiBrowserWindow()
     {
         _id = Enums.Windows.MidiBrowser.ToString();
         _active = false;
+        SetupFileWatchers();
+    }
+
+    private void SetupFileWatchers()
+    {
+        foreach (var watcher in _watchers) watcher.Dispose();
+        _watchers.Clear();
+
+        foreach (var midiPath in MidiPathsManager.MidiPaths)
+        {
+            if (!Directory.Exists(midiPath)) continue;
+            var watcher = new FileSystemWatcher(midiPath, "*.mid")
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite,
+                EnableRaisingEvents = true
+            };
+            watcher.Created += (_, _) => _fileListDirty = true;
+            watcher.Deleted += (_, _) => _fileListDirty = true;
+            watcher.Renamed += (_, _) => _fileListDirty = true;
+            _watchers.Add(watcher);
+        }
     }
 
     private void PlaySong(string file, SongState songState)
@@ -90,8 +111,9 @@ public class MidiBrowserWindow : ImGuiWindow
                 ImGui.SameLine(ImGui.GetWindowWidth() - 220);
                 if (ImGui.Button($"{FontAwesome6.ArrowsRotate} Refresh Metadata", new Vector2(180, 30)))
                 {
-                    // Force file list refresh
-                    _lastFileListRefresh = DateTime.MinValue;
+                    // Force file list refresh and re-setup watchers
+                    _fileListDirty = true;
+                    SetupFileWatchers();
 
                     foreach (var midiPath in MidiPathsManager.MidiPaths)
                     {
@@ -153,8 +175,8 @@ public class MidiBrowserWindow : ImGuiWindow
                             }
                         }
 
-                        // Refresh cached file list periodically instead of every frame
-                        if (DateTime.UtcNow - _lastFileListRefresh > FileListCacheDuration)
+                        // Refresh cached file list when FileSystemWatcher detects changes
+                        if (_fileListDirty)
                         {
                             _cachedMidiFiles.Clear();
                             foreach (var midiPath in MidiPathsManager.MidiPaths)
@@ -165,7 +187,7 @@ public class MidiBrowserWindow : ImGuiWindow
                                     _cachedMidiFiles.AddRange(files);
                                 }
                             }
-                            _lastFileListRefresh = DateTime.UtcNow;
+                            _fileListDirty = false;
                         }
 
                         var sortedFiles = SortFiles(_cachedMidiFiles);
