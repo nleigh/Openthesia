@@ -35,9 +35,13 @@ public static class GameStateManager
     // O(1) lookup index keyed by normalized file path
     private static Dictionary<string, SongState> _index = new();
 
+    // Auto-save timer to prevent data loss on crash
+    private static System.Threading.Timer _autoSaveTimer;
+
     public static void Initialize()
     {
         LoadState();
+        _autoSaveTimer = new System.Threading.Timer(_ => SaveState(), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
     }
 
     public static void LoadState()
