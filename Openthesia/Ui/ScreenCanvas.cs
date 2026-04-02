@@ -48,6 +48,11 @@ public class ScreenCanvas
     private static float _panVelocity;
     private static bool _isProgressBarActive;
 
+    // Countdown state
+    private static bool _countdownActive = false;
+    private static float _countdownTimer = 0f;
+    private static int _countdownNumber = 3;
+
     private static void RenderGrid()
     {
         var drawList = ImGui.GetWindowDrawList();
@@ -761,8 +766,73 @@ public class ScreenCanvas
                 }
             }
 
+            // Draw countdown overlay if active
+            if (_countdownActive)
+            {
+                DrawCountdown();
+            }
+
             DrawSharedControls(showTopBar, playMode);
         }
+    }
+
+    private static void StartCountdown()
+    {
+        _countdownActive = true;
+        _countdownNumber = 3;
+        _countdownTimer = 0f;
+    }
+
+    private static void DrawCountdown()
+    {
+        float dt = ImGui.GetIO().DeltaTime;
+        _countdownTimer += dt;
+
+        if (_countdownTimer >= 1f)
+        {
+            _countdownTimer = 0f;
+            _countdownNumber--;
+
+            if (_countdownNumber <= 0)
+            {
+                _countdownActive = false;
+                MidiPlayer.Playback.Start();
+                MidiPlayer.StartTimer();
+                return;
+            }
+        }
+
+        var drawList = ImGui.GetWindowDrawList();
+        var displaySize = ImGui.GetIO().DisplaySize;
+
+        // Semi-transparent dark overlay
+        drawList.AddRectFilled(Vector2.Zero, displaySize, ImGui.GetColorU32(new Vector4(0, 0, 0, 0.5f)));
+
+        // Large number
+        string text = _countdownNumber.ToString();
+        ImGui.PushFont(FontController.Title);
+        var textSize = ImGui.CalcTextSize(text);
+
+        // Scale up the number with a pulse animation
+        float pulse = 1f + 0.3f * (1f - _countdownTimer); // Shrinks from 1.3 to 1.0 over the second
+        var center = displaySize / 2;
+
+        // Color: green for 1, yellow for 2, red for 3
+        Vector4 color = _countdownNumber switch
+        {
+            3 => new Vector4(1f, 0.3f, 0.2f, 1f),
+            2 => new Vector4(1f, 0.8f, 0.1f, 1f),
+            1 => new Vector4(0.2f, 0.9f, 0.3f, 1f),
+            _ => Vector4.One
+        };
+
+        ImGui.SetCursorScreenPos(center - textSize * pulse / 2);
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.SetWindowFontScale(pulse * 2f);
+        ImGui.Text(text);
+        ImGui.SetWindowFontScale(1f);
+        ImGui.PopStyleColor();
+        ImGui.PopFont();
     }
 
     private static void DrawProgressBar()
@@ -835,8 +905,15 @@ public class ScreenCanvas
             ImGuiTheme.Style.Colors[(int)ImGuiCol.Text] = playColor;
             if (ImGui.Button($"{FontAwesome6.Play}", new(ImGuiUtils.FixedSize(new Vector2(50)).X, ImGui.GetWindowSize().Y)))
             {
-                MidiPlayer.Playback.Start();
-                MidiPlayer.StartTimer();
+                if (MidiPlayer.Timer <= 0 && !_countdownActive)
+                {
+                    StartCountdown();
+                }
+                else if (!_countdownActive)
+                {
+                    MidiPlayer.Playback.Start();
+                    MidiPlayer.StartTimer();
+                }
             }
             ImGuiTheme.Style.Colors[(int)ImGuiCol.Text] = Vector4.One;
             var pauseColor = MidiPlayer.IsTimerRunning ? Vector4.One : new(0.70f, 0.22f, 0.22f, 1);
