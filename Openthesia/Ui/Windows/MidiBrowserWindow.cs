@@ -82,6 +82,19 @@ public class MidiBrowserWindow : ImGuiWindow
                 ImGui.PopStyleVar(2);
 
                 ImGui.Text($"{FontAwesome6.Folder} MIDI File Browser");
+                ImGui.SameLine(ImGui.GetWindowWidth() - 220);
+                if (ImGui.Button($"{FontAwesome6.ArrowsRotate} Refresh Metadata", new Vector2(180, 30)))
+                {
+                    foreach (var midiPath in MidiPathsManager.MidiPaths)
+                    {
+                        var files = Directory.GetFiles(midiPath, "*.mid");
+                        foreach(var file in files)
+                        {
+                            MetadataService.QueueMetadataFetch(file);
+                        }
+                    }
+                }
+
                 ImGui.Spacing();
                 RenderSearchBar();
                 ImGui.Separator();
@@ -143,7 +156,7 @@ public class MidiBrowserWindow : ImGuiWindow
 
                             SongState songState = GameStateManager.GetSongState(file);
                             
-                            // Queue metadata fetch in background
+                            // Queue metadata fetch in background (only if not already fetched)
                             MetadataService.QueueMetadataFetch(file);
 
                             if (_favoritesOnly && !songState.IsFavorite)

@@ -25,10 +25,10 @@ public static class MetadataService
             Directory.CreateDirectory(_cacheDir);
     }
 
-    public static void QueueMetadataFetch(string filePath)
+    public static void QueueMetadataFetch(string filePath, bool force = false)
     {
         var songState = GameStateManager.GetSongState(filePath);
-        if (songState.MetadataFetched) return;
+        if (songState.MetadataFetched && !force) return;
         
         if (!_fetchQueue.Contains(filePath))
         {
