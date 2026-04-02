@@ -102,6 +102,7 @@ public class MidiBrowserWindow : ImGuiWindow
                         ImGui.TableSetupColumn("Key", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Plays", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Fav", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupScrollFreeze(0, 1); // Freeze the top row (headers)
                         ImGui.TableHeadersRow();
 
                         unsafe
