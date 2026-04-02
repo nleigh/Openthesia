@@ -17,6 +17,7 @@ public static class MetadataService
     private static readonly string _cacheDir = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "Cache", "Thumbnails");
     private static readonly System.Collections.Concurrent.ConcurrentQueue<(string filePath, bool force)> _fetchQueue = new();
     private static bool _isProcessing = false;
+    private static readonly SemaphoreSlim _apiThrottle = new SemaphoreSlim(3, 3); // Allow 3 concurrent fetches
 
     static MetadataService()
     {
@@ -45,11 +46,25 @@ public static class MetadataService
 
     private static async Task ProcessQueueAsync()
     {
+        var tasks = new List<Task>();
         while (_fetchQueue.TryDequeue(out var item))
         {
-            await FetchMetadataAsync(item.filePath);
-            await Task.Delay(500); // Rate limiter for iTunes API
+            await _apiThrottle.WaitAsync();
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    await FetchMetadataAsync(item.filePath);
+                }
+                finally
+                {
+                    _apiThrottle.Release();
+                    await Task.Delay(200); // Small delay per-worker to avoid API hammering
+                }
+            });
+            tasks.Add(task);
         }
+        await Task.WhenAll(tasks);
         _isProcessing = false;
     }
 
