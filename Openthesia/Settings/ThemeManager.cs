@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Openthesia.Core;
 using Openthesia.Enums;
 
@@ -30,6 +30,11 @@ public static class ThemeManager
                 MainBgCol = ImGuiTheme.HtmlToVec4("#313131");
                 RightHandCol = ImGuiTheme.HtmlToVec4("#87C853");
                 LeftHandCol = ImGuiTheme.HtmlToVec4("#D4084A");
+                break;
+            case Themes.Light:
+                MainBgCol = ImGuiTheme.HtmlToVec4("#F3F4F6");
+                RightHandCol = ImGuiTheme.HtmlToVec4("#16A34A");
+                LeftHandCol = ImGuiTheme.HtmlToVec4("#E11D48");
                 break;
         }
         Theme = theme;

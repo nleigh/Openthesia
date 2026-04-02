@@ -1,8 +1,9 @@
-﻿namespace Openthesia.Enums;
+namespace Openthesia.Enums;
 
 public enum Themes
 {
     Sky,
     Volcano,
     Synthesia,
+    Light
 }
