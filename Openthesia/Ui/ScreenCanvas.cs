@@ -52,6 +52,7 @@ public class ScreenCanvas
     private static bool _countdownActive = false;
     private static float _countdownTimer = 0f;
     private static int _countdownNumber = 3;
+    private static float _lastSeconds = 0f;
 
     private static void RenderGrid()
     {
@@ -293,7 +294,15 @@ public class ScreenCanvas
 
         if (MidiPlayer.IsTimerRunning)
         {
-            MidiPlayer.Timer += ImGui.GetIO().DeltaTime * 100f * (float)MidiPlayer.Playback.Speed * FallSpeedVal;
+            if (MidiPlayer.Seconds < _lastSeconds)
+            {
+                MidiPlayer.Timer = MidiPlayer.Seconds * 100f * FallSpeedVal;
+            }
+            else
+            {
+                MidiPlayer.Timer += ImGui.GetIO().DeltaTime * 100f * (float)MidiPlayer.Playback.Speed * FallSpeedVal;
+            }
+            _lastSeconds = MidiPlayer.Seconds;
         }
 
         int index = 0;
@@ -921,6 +930,28 @@ public class ScreenCanvas
         var v3 = new Vector3(ThemeManager.RightHandCol.X, ThemeManager.RightHandCol.Y, ThemeManager.RightHandCol.Z);
         ImGui.GetWindowDrawList().AddRectFilled(Vector2.Zero, new Vector2(pBarWidth, pBarHeight), ImGui.GetColorU32(new Vector4(v3, 0.2f)));
 
+        // Draw loop markers
+        var durationSeconds = (float)MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
+        var displayWidth = ImGui.GetIO().DisplaySize.X;
+        var drawList = ImGui.GetWindowDrawList();
+
+        if (MidiPlayer.LoopStart.HasValue)
+        {
+            float ax = (MidiPlayer.LoopStart.Value / durationSeconds) * displayWidth;
+            drawList.AddLine(new(ax, 0), new(ax, pBarHeight), ImGui.GetColorU32(new Vector4(0.2f, 0.9f, 0.3f, 1f)), 2f);
+        }
+        if (MidiPlayer.LoopEnd.HasValue)
+        {
+            float bx = (MidiPlayer.LoopEnd.Value / durationSeconds) * displayWidth;
+            drawList.AddLine(new(bx, 0), new(bx, pBarHeight), ImGui.GetColorU32(new Vector4(1f, 0.3f, 0.2f, 1f)), 2f);
+        }
+        if (MidiPlayer.LoopStart.HasValue && MidiPlayer.LoopEnd.HasValue && MidiPlayer.IsLooping)
+        {
+            float ax = (MidiPlayer.LoopStart.Value / durationSeconds) * displayWidth;
+            float bx = (MidiPlayer.LoopEnd.Value / durationSeconds) * displayWidth;
+            drawList.AddRectFilled(new(ax, 0), new(bx, pBarHeight / 2), ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.1f)));
+        }
+
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBg] = oldFrameBg;
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgHovered] = oldFrameBgHovered;
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgActive] = oldFrameBgActive;
@@ -1059,21 +1090,54 @@ public class ScreenCanvas
                     MidiPlayer.StartTimer();
                 }
 
-                // Left/Right = Seek 5 seconds
-                if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow))
+                // Looping controls
+                if (ImGui.IsKeyPressed(ImGuiKey.LeftBracket, false)) // [ = A
                 {
-                    var newTime = Math.Max(0, MidiPlayer.Seconds - 5);
-                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(newTime * 1_000_000)));
-                    MidiPlayer.Timer = (float)(newTime * 1000);
-                    MidiPlayer.Seconds = (float)newTime;
+                    MidiPlayer.LoopStart = MidiPlayer.Seconds;
+                    MidiPlayer.IsLooping = true;
                 }
-                if (ImGui.IsKeyPressed(ImGuiKey.RightArrow))
+                if (ImGui.IsKeyPressed(ImGuiKey.RightBracket, false)) // ] = B
                 {
-                    var totalSeconds = MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
-                    var newTime = Math.Min(totalSeconds, MidiPlayer.Seconds + 5);
-                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(newTime * 1_000_000)));
-                    MidiPlayer.Timer = (float)(newTime * 1000);
-                    MidiPlayer.Seconds = (float)newTime;
+                    MidiPlayer.LoopEnd = MidiPlayer.Seconds;
+                    MidiPlayer.IsLooping = true;
+                }
+                if (ImGui.IsKeyPressed(ImGuiKey.L, false)) // L = Toggle/Clear
+                {
+                    if (MidiPlayer.LoopStart.HasValue || MidiPlayer.LoopEnd.HasValue)
+                    {
+                        MidiPlayer.LoopStart = null;
+                        MidiPlayer.LoopEnd = null;
+                        MidiPlayer.IsLooping = false;
+                    }
+                    else
+                    {
+                        MidiPlayer.IsLooping = !MidiPlayer.IsLooping;
+                    }
+                }
+
+                // Seek - Arrows
+                if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow, true))
+                {
+                    MidiPlayer.Seconds = Math.Max(0, MidiPlayer.Seconds - 5f);
+                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(MidiPlayer.Seconds * 1000000)));
+                    MidiPlayer.Timer = MidiPlayer.Seconds * 100 * FallSpeedVal;
+                }
+                if (ImGui.IsKeyPressed(ImGuiKey.RightArrow, true))
+                {
+                    var duration = (float)MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
+                    MidiPlayer.Seconds = Math.Min(duration, MidiPlayer.Seconds + 5f);
+                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(MidiPlayer.Seconds * 1000000)));
+                    MidiPlayer.Timer = MidiPlayer.Seconds * 100 * FallSpeedVal;
+                }
+                
+                // Speed control - PageUp/PageDown
+                if (ImGui.IsKeyPressed(ImGuiKey.PageUp, true))
+                {
+                    MidiPlayer.Playback.Speed = Math.Min(2.0, MidiPlayer.Playback.Speed + 0.05);
+                }
+                if (ImGui.IsKeyPressed(ImGuiKey.PageDown, true))
+                {
+                    MidiPlayer.Playback.Speed = Math.Max(0.25, MidiPlayer.Playback.Speed - 0.05);
                 }
 
                 // F = Toggle favorite

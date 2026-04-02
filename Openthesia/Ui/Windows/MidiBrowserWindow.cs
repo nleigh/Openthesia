@@ -25,6 +25,8 @@ public class MidiBrowserWindow : ImGuiWindow
 
     private bool _showPlaylists = false;
     private string _newPlaylistName = string.Empty;
+    private string _hoveredFile = string.Empty;
+    private float _hoverTime = 0f;
 
     public MidiBrowserWindow()
     {
@@ -55,6 +57,7 @@ public class MidiBrowserWindow : ImGuiWindow
 
     private void PlaySong(string file, SongState songState)
     {
+        PreviewManager.StopPreview(); // Stop any pending preview
         GameStateManager.IncrementPlayCount(file);
         MidiFileHandler.LoadMidiFile(file);
         // we start and stop the playback so we can change the time before playing the song,
@@ -304,6 +307,31 @@ public class MidiBrowserWindow : ImGuiWindow
                             if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                             {
                                 PlaySong(file, songState);
+                            }
+
+                            // Preview on hover (1.5s delay)
+                            if (ImGui.IsItemHovered())
+                            {
+                                if (_hoveredFile != file)
+                                {
+                                    _hoveredFile = file;
+                                    _hoverTime = 0f;
+                                    PreviewManager.StopPreview();
+                                }
+                                else
+                                {
+                                    _hoverTime += ImGui.GetIO().DeltaTime;
+                                    if (_hoverTime >= 1.5f && _hoverTime < 1.55f) 
+                                    {
+                                        PreviewManager.StartPreview(file);
+                                    }
+                                }
+                            }
+                            else if (_hoveredFile == file)
+                            {
+                                _hoveredFile = string.Empty;
+                                _hoverTime = 0f;
+                                PreviewManager.StopPreview();
                             }
 
                             if (ImGui.BeginPopupContextItem($"context_{file}"))

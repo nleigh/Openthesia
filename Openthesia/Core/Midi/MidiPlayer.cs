@@ -15,6 +15,9 @@ public static class MidiPlayer
 
     public static bool IsTimerRunning;
     public static float Timer = 0;
+    public static float? LoopStart = null;
+    public static float? LoopEnd = null;
+    public static bool IsLooping = false;
 
     public static void OnCurrentTimeChanged(object sender, PlaybackCurrentTimeChangedEventArgs e)
     {
@@ -25,6 +28,15 @@ public static class MidiPlayer
             Seconds = (float)Time.TotalSeconds;
             Milliseconds = (float)Time.TotalMilliseconds;
             Microseconds = Time.TotalMicroseconds;
+
+            if (IsLooping && LoopStart.HasValue && LoopEnd.HasValue)
+            {
+                if (Seconds >= LoopEnd.Value)
+                {
+                    Playback.MoveToTime(new MetricTimeSpan((long)(LoopStart.Value * 1_000_000)));
+                    // We'll let the UI sync the visual timer
+                }
+            }
         }
     }
 
