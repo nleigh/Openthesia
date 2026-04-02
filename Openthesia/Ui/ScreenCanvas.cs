@@ -234,10 +234,59 @@ public class ScreenCanvas
         }
     }
 
+    private static void RenderMeasureLines()
+    {
+        if (MidiFileData.MidiFile == null || MidiFileData.TempoMap == null) return;
+
+        var drawList = ImGui.GetWindowDrawList();
+        var displayWidth = ImGui.GetIO().DisplaySize.X;
+
+        // Get current BPM and compute beat duration
+        var tempoChange = MidiFileData.TempoMap.GetTempoChanges().FirstOrDefault();
+        double bpm = tempoChange != null ? tempoChange.Value.BeatsPerMinute : 120;
+        double beatDuration = 60.0 / bpm; // seconds per beat
+        double barDuration = beatDuration * 4; // 4/4 time assumed
+
+        // Figure out the visible time range
+        float currentTime = MidiPlayer.Timer / (100f * FallSpeedVal);
+        float visibleSeconds = (PianoRenderer.P.Y - CanvasPos.Y) / (100f * FallSpeedVal);
+
+        // Find the first bar in the visible range
+        double startBarTime = Math.Floor(currentTime / barDuration) * barDuration;
+
+        for (double barTime = startBarTime; barTime < currentTime + visibleSeconds + barDuration; barTime += barDuration)
+        {
+            if (barTime < 0) continue;
+
+            float y;
+            if (UpDirection && !IsLearningMode && !IsEditMode)
+            {
+                y = PianoRenderer.P.Y + (float)(barTime * FallSpeedVal * 100f) - MidiPlayer.Timer;
+            }
+            else
+            {
+                y = PianoRenderer.P.Y - (float)(barTime * FallSpeedVal * 100f) + MidiPlayer.Timer;
+            }
+
+            if (y < CanvasPos.Y || y > PianoRenderer.P.Y) continue;
+
+            // Main bar line (brighter)
+            drawList.AddLine(
+                new Vector2(CanvasPos.X, y),
+                new Vector2(CanvasPos.X + displayWidth, y),
+                ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.12f)),
+                1.5f
+            );
+        }
+    }
+
     private static void DrawPlaybackNotes()
     {
         PianoRenderer.ApproachingNotes.Clear();
         var drawList = ImGui.GetWindowDrawList();
+
+        // Draw measure bar lines behind notes
+        RenderMeasureLines();
         
         float upcomingLeftTime = -1f;
         List<Melanchall.DryWetMidi.MusicTheory.NoteName> upcomingLeftNotes = new();
