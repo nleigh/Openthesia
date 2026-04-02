@@ -135,7 +135,7 @@ public class MidiBrowserWindow : ImGuiWindow
                 var availRegion = ImGui.GetContentRegionAvail();
                 if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f, availRegion.Y)))
                 {
-                    if (ImGui.BeginTable("File Table", 11, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
+                    if (ImGui.BeginTable("File Table", 12, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
                     {
                         ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.WidthFixed, 30f);
                         ImGui.TableSetupColumn("Art", ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.WidthFixed, 54f);
@@ -146,6 +146,7 @@ public class MidiBrowserWindow : ImGuiWindow
                         ImGui.TableSetupColumn("BPM", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Year", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Key", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupColumn("Difficulty", ImGuiTableColumnFlags.WidthFixed, 80f);
                         ImGui.TableSetupColumn("Plays", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupColumn("Fav", ImGuiTableColumnFlags.WidthFixed);
                         ImGui.TableSetupScrollFreeze(0, 1); // Freeze the top row (headers)
@@ -332,13 +333,37 @@ public class MidiBrowserWindow : ImGuiWindow
                             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.KeySignature ?? "-");
 
-                            // Plays Column
+                            // Difficulty Column
                             ImGui.TableSetColumnIndex(9);
+                            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
+                            if (songState.Difficulty.HasValue && songState.Difficulty > 0)
+                            {
+                                float diff = songState.Difficulty.Value;
+                                // Color: green(easy) -> yellow(medium) -> red(hard)
+                                Vector4 diffColor = diff <= 2f
+                                    ? new Vector4(0.2f, 0.9f, 0.3f, 1f)
+                                    : diff <= 3.5f
+                                        ? new Vector4(1f, 0.8f, 0.1f, 1f)
+                                        : new Vector4(1f, 0.3f, 0.2f, 1f);
+                                ImGui.PushStyleColor(ImGuiCol.Text, diffColor);
+                                int fullStars = (int)diff;
+                                string stars = new string('★', fullStars) + (diff - fullStars >= 0.5f ? "½" : "");
+                                ImGui.Text(stars);
+                                ImGui.PopStyleColor();
+                                if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{diff:F1} / 5.0");
+                            }
+                            else
+                            {
+                                ImGui.Text("-");
+                            }
+
+                            // Plays Column
+                            ImGui.TableSetColumnIndex(10);
                             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             ImGui.Text(songState.PlayCount.ToString());
 
                             // Fav Column
-                            ImGui.TableSetColumnIndex(10);
+                            ImGui.TableSetColumnIndex(11);
                             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
                             if (songState.IsFavorite) ImGui.PushStyleColor(ImGuiCol.Text, ImGuiTheme.HtmlToVec4("#EF4444"));
                             if (ImGui.Button($"{(songState.IsFavorite ? FontAwesome6.HeartCircleCheck : FontAwesome6.Heart)}##{file}"))
@@ -397,8 +422,9 @@ public class MidiBrowserWindow : ImGuiWindow
             6 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Bpm).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Bpm).ToList(), // BPM
             7 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Year).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Year).ToList(), // Year
             8 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).KeySignature).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).KeySignature).ToList(), // Key
-            9 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).PlayCount).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).PlayCount).ToList(), // Plays
-            10 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).IsFavorite).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).IsFavorite).ToList(), // Fav
+            9 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).Difficulty).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).Difficulty).ToList(), // Difficulty
+            10 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).PlayCount).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).PlayCount).ToList(), // Plays
+            11 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).IsFavorite).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).IsFavorite).ToList(), // Fav
             _ => midiFiles
         };
     }

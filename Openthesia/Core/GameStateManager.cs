@@ -18,6 +18,7 @@ public class SongState
     public string Album { get; set; }
     public int? Year { get; set; }
     public int? Bpm { get; set; }
+    public float? Difficulty { get; set; } // 0.0 to 5.0 star rating
     public string ThumbnailPath { get; set; }
     public bool MetadataFetched { get; set; }
 }

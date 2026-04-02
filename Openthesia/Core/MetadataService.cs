@@ -109,6 +109,10 @@ public static class MetadataService
                 string scaleStr = keySignatureEvent.Scale == 0 ? "Major" : "Minor";
                 songState.KeySignature = $"{keyStr} {scaleStr}";
             }
+
+            // Difficulty analysis
+            songState.Difficulty = ComputeDifficulty(midiFile, tempoMap, duration);
+
             stateChanged = true;
         }
         catch { }
@@ -168,6 +172,56 @@ public static class MetadataService
         if (stateChanged)
         {
             GameStateManager.SaveState();
+        }
+    }
+
+    private static float ComputeDifficulty(MidiFile midiFile, TempoMap tempoMap, MetricTimeSpan duration)
+    {
+        try
+        {
+            var notes = midiFile.GetNotes().ToList();
+            if (notes.Count == 0 || duration.TotalSeconds < 1) return 0f;
+
+            double durationSec = duration.TotalSeconds;
+
+            // 1. Note density (notes per second): 0-2 easy, 2-6 medium, 6-12 hard, 12+ expert
+            float noteDensity = (float)(notes.Count / durationSec);
+            float densityScore = Math.Clamp(noteDensity / 12f, 0f, 1f);
+
+            // 2. Tempo: faster = harder
+            float bpm = 120f;
+            var tempoChange = tempoMap.GetTempoChanges().FirstOrDefault();
+            if (tempoChange != null) bpm = (float)tempoChange.Value.BeatsPerMinute;
+            float tempoScore = Math.Clamp((bpm - 60f) / 140f, 0f, 1f); // 60-200 range
+
+            // 3. Polyphony: max simultaneous notes
+            int maxPolyphony = 1;
+            var sortedNotes = notes.OrderBy(n => n.Time).ToList();
+            for (int i = 0; i < sortedNotes.Count; i++)
+            {
+                int simultaneous = 1;
+                for (int j = i + 1; j < sortedNotes.Count && j < i + 20; j++)
+                {
+                    if (sortedNotes[j].Time <= sortedNotes[i].Time + 10) simultaneous++;
+                    else break;
+                }
+                if (simultaneous > maxPolyphony) maxPolyphony = simultaneous;
+            }
+            float polyphonyScore = Math.Clamp((maxPolyphony - 1) / 9f, 0f, 1f); // 1-10 range
+
+            // 4. Hand spread (range of note numbers used)
+            int minNote = notes.Min(n => (int)n.NoteNumber);
+            int maxNote = notes.Max(n => (int)n.NoteNumber);
+            int spread = maxNote - minNote;
+            float spreadScore = Math.Clamp((spread - 12) / 60f, 0f, 1f); // 1 octave to 6 octaves
+
+            // Weighted combination
+            float rawScore = densityScore * 0.35f + tempoScore * 0.20f + polyphonyScore * 0.25f + spreadScore * 0.20f;
+            return (float)Math.Round(rawScore * 5f, 1); // Scale to 0-5 stars
+        }
+        catch
+        {
+            return 0f;
         }
     }
 }
