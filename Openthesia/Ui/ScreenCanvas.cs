@@ -902,6 +902,62 @@ public class ScreenCanvas
             }
 
             ImGui.PopFont();
+
+            // KEYBOARD SHORTCUTS (only when keyboard MIDI input is not active)
+            if (!CoreSettings.KeyboardInput)
+            {
+                // Space = Play/Pause toggle
+                if (ImGui.IsKeyPressed(ImGuiKey.Space, false))
+                {
+                    if (MidiPlayer.IsTimerRunning)
+                    {
+                        MidiPlayer.Playback.Stop();
+                        MidiPlayer.IsTimerRunning = false;
+                    }
+                    else
+                    {
+                        MidiPlayer.Playback.Start();
+                        MidiPlayer.StartTimer();
+                    }
+                }
+
+                // R = Restart
+                if (ImGui.IsKeyPressed(ImGuiKey.R, false))
+                {
+                    MidiPlayer.SoundFontEngine?.StopAllNote(0);
+                    MidiPlayer.Playback.Stop();
+                    MidiPlayer.Playback.MoveToStart();
+                    MidiPlayer.Timer = 0;
+                    MidiPlayer.Seconds = 0;
+                    MidiPlayer.Playback.Start();
+                    MidiPlayer.StartTimer();
+                }
+
+                // Left/Right = Seek 5 seconds
+                if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow))
+                {
+                    var newTime = Math.Max(0, MidiPlayer.Seconds - 5);
+                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(newTime * 1_000_000)));
+                    MidiPlayer.Timer = (float)(newTime * 1000);
+                    MidiPlayer.Seconds = (float)newTime;
+                }
+                if (ImGui.IsKeyPressed(ImGuiKey.RightArrow))
+                {
+                    var totalSeconds = MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
+                    var newTime = Math.Min(totalSeconds, MidiPlayer.Seconds + 5);
+                    MidiPlayer.Playback.MoveToTime(new MetricTimeSpan((long)(newTime * 1_000_000)));
+                    MidiPlayer.Timer = (float)(newTime * 1000);
+                    MidiPlayer.Seconds = (float)newTime;
+                }
+
+                // F = Toggle favorite
+                if (ImGui.IsKeyPressed(ImGuiKey.F, false) && !string.IsNullOrEmpty(MidiFileData.FilePath))
+                {
+                    var state = GameStateManager.GetSongState(MidiFileData.FilePath);
+                    GameStateManager.SetFavorite(MidiFileData.FilePath, !state.IsFavorite);
+                }
+            }
+
             ImGui.EndChild();
         }
     }
