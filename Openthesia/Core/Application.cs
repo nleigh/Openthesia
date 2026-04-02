@@ -70,7 +70,7 @@ public class Application
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
         if (ImGui.Begin("##GlobalThemeToggle", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize))
         {
-            ImGui.PushFont(Ui.Helpers.FontController.Font16_Icon16);
+            ImGui.PushFont(FontController.Font16_Icon16);
             string icon = Settings.ThemeManager.Theme == Enums.Themes.Light ? IconFonts.FontAwesome6.Moon : IconFonts.FontAwesome6.Sun;
             if (ImGui.Button(icon, new System.Numerics.Vector2(40, 40)))
             {
