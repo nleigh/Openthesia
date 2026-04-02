@@ -23,6 +23,9 @@ public class MidiBrowserWindow : ImGuiWindow
     private volatile bool _fileListDirty = true;
     private List<FileSystemWatcher> _watchers = new();
 
+    private bool _showPlaylists = false;
+    private string _newPlaylistName = string.Empty;
+
     public MidiBrowserWindow()
     {
         _id = Enums.Windows.MidiBrowser.ToString();
@@ -108,6 +111,11 @@ public class MidiBrowserWindow : ImGuiWindow
                 ImGui.PopStyleVar(2);
 
                 ImGui.Text($"{FontAwesome6.Folder} MIDI File Browser");
+                ImGui.SameLine(ImGui.GetWindowWidth() - 350);
+                if (ImGui.Button($"{FontAwesome6.ListUl} Playlists", new Vector2(120, 30)))
+                {
+                    _showPlaylists = !_showPlaylists;
+                }
                 ImGui.SameLine(ImGui.GetWindowWidth() - 220);
                 if (ImGui.Button($"{FontAwesome6.ArrowsRotate} Refresh Metadata", new Vector2(180, 30)))
                 {
@@ -133,7 +141,19 @@ public class MidiBrowserWindow : ImGuiWindow
                 ImGui.Separator();
 
                 var availRegion = ImGui.GetContentRegionAvail();
-                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f, availRegion.Y)))
+                float playlistWidth = _showPlaylists ? 280f : 0f;
+
+                if (_showPlaylists)
+                {
+                    if (ImGui.BeginChild("Playlist Sidebar", new Vector2(playlistWidth, availRegion.Y), ImGuiChildFlags.Border))
+                    {
+                        RenderPlaylistSidebar();
+                    }
+                    ImGui.EndChild();
+                    ImGui.SameLine();
+                }
+
+                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f - playlistWidth, availRegion.Y)))
                 {
                     if (ImGui.BeginTable("File Table", 12, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
                     {
@@ -288,9 +308,36 @@ public class MidiBrowserWindow : ImGuiWindow
 
                             if (ImGui.BeginPopupContextItem($"context_{file}"))
                             {
-                                if (ImGui.MenuItem($"{FontAwesome6.ArrowsRotate} Refresh this song's metadata"))
+                                if (ImGui.MenuItem($"{FontAwesome6.ArrowsRotate} Refresh metadata"))
                                 {
                                     MetadataService.QueueMetadataFetch(file, true);
+                                }
+                                
+                                ImGui.Separator();
+                                
+                                if (ImGui.MenuItem($"{FontAwesome6.ListUl} Add to Queue"))
+                                {
+                                    SongQueueManager.AddToQueue(file);
+                                }
+
+                                if (ImGui.BeginMenu($"{FontAwesome6.Plus} Add to Playlist"))
+                                {
+                                    if (GameStateManager.State.Playlists.Count == 0)
+                                    {
+                                        ImGui.TextDisabled("No playlists found");
+                                    }
+                                    foreach (var playlist in GameStateManager.State.Playlists)
+                                    {
+                                        if (ImGui.MenuItem(playlist.Name))
+                                        {
+                                            if (!playlist.FilePaths.Contains(file))
+                                            {
+                                                playlist.FilePaths.Add(file);
+                                                GameStateManager.SaveState();
+                                            }
+                                        }
+                                    }
+                                    ImGui.EndMenu();
                                 }
                                 ImGui.EndPopup();
                             }
@@ -427,6 +474,87 @@ public class MidiBrowserWindow : ImGuiWindow
             11 => _sortDirection == 1 ? midiFiles.OrderBy(p => GameStateManager.GetSongState(p).IsFavorite).ToList() : midiFiles.OrderByDescending(p => GameStateManager.GetSongState(p).IsFavorite).ToList(), // Fav
             _ => midiFiles
         };
+    }
+
+    private void RenderPlaylistSidebar()
+    {
+        using (AutoFont font18 = new(FontController.GetFontOfSize(18)))
+        {
+            ImGui.Text($"{FontAwesome6.ListUl} Playlists");
+            ImGui.Separator();
+
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 40);
+            ImGui.InputTextWithHint("##new_playlist", "New Playlist...", ref _newPlaylistName, 100);
+            ImGui.SameLine();
+            if (ImGui.Button($"{FontAwesome6.Plus}"))
+            {
+                if (!string.IsNullOrEmpty(_newPlaylistName))
+                {
+                    GameStateManager.State.Playlists.Add(new Playlist { Name = _newPlaylistName });
+                    GameStateManager.SaveState();
+                    _newPlaylistName = string.Empty;
+                }
+            }
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+        }
+
+        foreach (var playlist in GameStateManager.State.Playlists.ToList())
+        {
+            bool open = ImGui.TreeNodeEx($"{playlist.Name} ({playlist.FilePaths.Count})###{playlist.Name}", ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.DefaultOpen);
+            
+            // Context menu for playlist
+            if (ImGui.BeginPopupContextItem($"playlist_ctx_{playlist.Name}"))
+            {
+                if (ImGui.MenuItem($"{FontAwesome6.Play} Play Playlist"))
+                {
+                    if (playlist.FilePaths.Count > 0)
+                    {
+                        SongQueueManager.SetQueue(playlist.FilePaths, 0);
+                        PlaySong(playlist.FilePaths[0], GameStateManager.GetSongState(playlist.FilePaths[0]));
+                    }
+                }
+                if (ImGui.MenuItem($"{FontAwesome6.Trash} Delete Playlist"))
+                {
+                    GameStateManager.State.Playlists.Remove(playlist);
+                    GameStateManager.SaveState();
+                }
+                ImGui.EndPopup();
+            }
+
+            if (open)
+            {
+                for (int i = 0; i < playlist.FilePaths.Count; i++)
+                {
+                    string filePath = playlist.FilePaths[i];
+                    string fileName = Path.GetFileName(filePath);
+                    
+                    ImGui.PushID($"item_{playlist.Name}_{i}");
+                    if (ImGui.Selectable($"{fileName}", false, ImGuiSelectableFlags.AllowDoubleClick))
+                    {
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                        {
+                            SongQueueManager.SetQueue(playlist.FilePaths, i);
+                            PlaySong(filePath, GameStateManager.GetSongState(filePath));
+                        }
+                    }
+                    
+                    if (ImGui.BeginPopupContextItem())
+                    {
+                        if (ImGui.MenuItem($"{FontAwesome6.Trash} Remove from Playlist"))
+                        {
+                            playlist.FilePaths.RemoveAt(i);
+                            GameStateManager.SaveState();
+                        }
+                        ImGui.EndPopup();
+                    }
+                    ImGui.PopID();
+                }
+                ImGui.TreePop();
+            }
+        }
     }
 
     protected override void OnImGui()

@@ -1,4 +1,4 @@
-﻿using Melanchall.DryWetMidi.Interaction;
+using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using Openthesia.Core.SoundFonts;
 
@@ -28,9 +28,15 @@ public static class MidiPlayer
         }
     }
 
+    public static bool ShouldAdvanceQueue = false;
+
     public static void Playback_Finished(object? sender, EventArgs e)
     {
         StopTimer();
+        if (SongQueueManager.AutoAdvance && SongQueueManager.HasNext)
+        {
+            ShouldAdvanceQueue = true;
+        }
     }
 
     public static void StopTimer()

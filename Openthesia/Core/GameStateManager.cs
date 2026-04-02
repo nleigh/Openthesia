@@ -23,9 +23,16 @@ public class SongState
     public bool MetadataFetched { get; set; }
 }
 
+public class Playlist
+{
+    public string Name { get; set; }
+    public List<string> FilePaths { get; set; } = new();
+}
+
 public class GameStateData
 {
     public List<SongState> Songs { get; set; } = new();
+    public List<Playlist> Playlists { get; set; } = new();
 }
 
 public static class GameStateManager
