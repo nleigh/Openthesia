@@ -32,6 +32,9 @@ public static class GameStateManager
     public static string StatePath = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "GameState.json");
     public static GameStateData State { get; private set; } = new();
 
+    // O(1) lookup index keyed by normalized file path
+    private static Dictionary<string, SongState> _index = new();
+
     public static void Initialize()
     {
         LoadState();
@@ -56,6 +59,19 @@ public static class GameStateManager
             State = new GameStateData();
             SaveState();
         }
+        RebuildIndex();
+    }
+
+    private static void RebuildIndex()
+    {
+        _index.Clear();
+        foreach (var song in State.Songs)
+        {
+            if (song.FilePath != null)
+            {
+                _index[song.FilePath.ToLowerInvariant()] = song;
+            }
+        }
     }
 
     public static void SaveState()
@@ -74,12 +90,12 @@ public static class GameStateManager
     public static SongState GetSongState(string filePath)
     {
         var normalizedPath = filePath.ToLowerInvariant();
-        var song = State.Songs.FirstOrDefault(s => s.FilePath.ToLowerInvariant() == normalizedPath);
-        if (song == null)
-        {
-            song = new SongState { FilePath = filePath, PlayCount = 0, IsFavorite = false };
-            State.Songs.Add(song);
-        }
+        if (_index.TryGetValue(normalizedPath, out var song))
+            return song;
+
+        song = new SongState { FilePath = filePath, PlayCount = 0, IsFavorite = false };
+        State.Songs.Add(song);
+        _index[normalizedPath] = song;
         return song;
     }
 
@@ -95,5 +111,11 @@ public static class GameStateManager
         var song = GetSongState(filePath);
         song.IsFavorite = isFavorite;
         SaveState();
+    }
+
+    public static void ClearAllMetadata()
+    {
+        State.Songs.Clear();
+        _index.Clear();
     }
 }

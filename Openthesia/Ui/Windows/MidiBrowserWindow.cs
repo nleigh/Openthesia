@@ -18,6 +18,11 @@ public class MidiBrowserWindow : ImGuiWindow
     private string _selectedFile = string.Empty;
     private bool _shouldScrollToSelected = false;
 
+    // Cached file list to avoid scanning the filesystem every frame
+    private List<string> _cachedMidiFiles = new();
+    private DateTime _lastFileListRefresh = DateTime.MinValue;
+    private static readonly TimeSpan FileListCacheDuration = TimeSpan.FromSeconds(5);
+
     public MidiBrowserWindow()
     {
         _id = Enums.Windows.MidiBrowser.ToString();
@@ -85,12 +90,18 @@ public class MidiBrowserWindow : ImGuiWindow
                 ImGui.SameLine(ImGui.GetWindowWidth() - 220);
                 if (ImGui.Button($"{FontAwesome6.ArrowsRotate} Refresh Metadata", new Vector2(180, 30)))
                 {
+                    // Force file list refresh
+                    _lastFileListRefresh = DateTime.MinValue;
+
                     foreach (var midiPath in MidiPathsManager.MidiPaths)
                     {
-                        var files = Directory.GetFiles(midiPath, "*.mid");
-                        foreach(var file in files)
+                        if (Directory.Exists(midiPath))
                         {
-                            MetadataService.QueueMetadataFetch(file);
+                            var files = Directory.GetFiles(midiPath, "*.mid");
+                            foreach(var file in files)
+                            {
+                                MetadataService.QueueMetadataFetch(file);
+                            }
                         }
                     }
                 }
@@ -142,17 +153,35 @@ public class MidiBrowserWindow : ImGuiWindow
                             }
                         }
 
-                        List<string> midiFiles = new();
-                        foreach (var midiPath in MidiPathsManager.MidiPaths)
+                        // Refresh cached file list periodically instead of every frame
+                        if (DateTime.UtcNow - _lastFileListRefresh > FileListCacheDuration)
                         {
-                            var files = Directory.GetFiles(midiPath, "*.mid");
-                            midiFiles.AddRange(files);
+                            _cachedMidiFiles.Clear();
+                            foreach (var midiPath in MidiPathsManager.MidiPaths)
+                            {
+                                if (Directory.Exists(midiPath))
+                                {
+                                    var files = Directory.GetFiles(midiPath, "*.mid");
+                                    _cachedMidiFiles.AddRange(files);
+                                }
+                            }
+                            _lastFileListRefresh = DateTime.UtcNow;
                         }
-                        var sortedFiles = SortFiles(midiFiles);
+
+                        var sortedFiles = SortFiles(_cachedMidiFiles);
                         foreach (var file in sortedFiles)
                         {
-                            if (!Path.GetFileName(file).ToLower().Contains(_searchBuffer.ToLower()) && _searchBuffer != string.Empty)
-                                continue;
+                            string fileName = Path.GetFileName(file);
+                            if (_searchBuffer != string.Empty)
+                            {
+                                string search = _searchBuffer.ToLower();
+                                SongState searchState = GameStateManager.GetSongState(file);
+                                bool matchesSearch = fileName.ToLower().Contains(search)
+                                    || (searchState.Artist != null && searchState.Artist.ToLower().Contains(search))
+                                    || (searchState.Title != null && searchState.Title.ToLower().Contains(search))
+                                    || (searchState.Album != null && searchState.Album.ToLower().Contains(search));
+                                if (!matchesSearch) continue;
+                            }
 
                             SongState songState = GameStateManager.GetSongState(file);
                             

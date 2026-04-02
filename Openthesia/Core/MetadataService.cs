@@ -15,7 +15,7 @@ public static class MetadataService
 {
     private static readonly HttpClient _httpClient = new HttpClient();
     private static readonly string _cacheDir = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "Cache", "Thumbnails");
-    private static readonly System.Collections.Concurrent.ConcurrentQueue<string> _fetchQueue = new();
+    private static readonly System.Collections.Concurrent.ConcurrentQueue<(string filePath, bool force)> _fetchQueue = new();
     private static bool _isProcessing = false;
 
     static MetadataService()
@@ -29,23 +29,25 @@ public static class MetadataService
     {
         var songState = GameStateManager.GetSongState(filePath);
         if (songState.MetadataFetched && !force) return;
-        
-        if (!_fetchQueue.Contains(filePath))
+
+        if (force)
         {
-            _fetchQueue.Enqueue(filePath);
-            if (!_isProcessing)
-            {
-                _isProcessing = true;
-                Task.Run(ProcessQueueAsync);
-            }
+            songState.MetadataFetched = false;
+        }
+        
+        _fetchQueue.Enqueue((filePath, force));
+        if (!_isProcessing)
+        {
+            _isProcessing = true;
+            Task.Run(ProcessQueueAsync);
         }
     }
 
     private static async Task ProcessQueueAsync()
     {
-        while (_fetchQueue.TryDequeue(out var filePath))
+        while (_fetchQueue.TryDequeue(out var item))
         {
-            await FetchMetadataAsync(filePath);
+            await FetchMetadataAsync(item.filePath);
             await Task.Delay(500); // Rate limiter for iTunes API
         }
         _isProcessing = false;

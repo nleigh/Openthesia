@@ -188,7 +188,7 @@ public class SettingsWindow : ImGuiWindow
         if (ImGui.Button($"{FontAwesome6.TrashCan} Clear Metadata Cache", ImGuiUtils.FixedSize(new Vector2(250, 40))))
         {
             TextureCache.ClearCache();
-            GameStateManager.State.Songs.Clear();
+            GameStateManager.ClearAllMetadata();
             GameStateManager.SaveState();
 
             string cacheDir = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "Cache", "Thumbnails");
