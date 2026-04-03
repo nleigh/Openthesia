@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Openthesia.Core;
 using System.Numerics;
 
@@ -34,5 +34,11 @@ public static class ImGuiUtils
             color.Z * multiplier,
             color.W  // Preserve alpha
         );
+    }
+    public static void TextCentered(string text)
+    {
+        var textSize = ImGui.CalcTextSize(text);
+        ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - textSize.X) / 2);
+        ImGui.Text(text);
     }
 }
