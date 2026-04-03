@@ -1,4 +1,4 @@
-﻿using Melanchall.DryWetMidi.Common;
+using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Multimedia;
 using Openthesia.Core.Midi;
@@ -155,6 +155,13 @@ public static class IOHandle
 
     public static void OnEventReceived(object sender, MidiEventPlayedEventArgs e)
     {
+        // Hand separation muting
+        if (LeftRightData.S_EventHandMap.TryGetValue(e.Event, out bool isRight))
+        {
+            if (isRight && !ScreenCanvasControls.RightHandActive) return;
+            if (!isRight && !ScreenCanvasControls.LeftHandActive) return;
+        }
+
         // return in learning mode to prevent key presses
         if (ScreenCanvasControls.IsLearningMode)
             return;

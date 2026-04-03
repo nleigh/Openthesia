@@ -145,6 +145,7 @@ public class MidiBrowserWindow : ImGuiWindow
 
                 var availRegion = ImGui.GetContentRegionAvail();
                 float playlistWidth = _showPlaylists ? 280f : 0f;
+                float detailWidth = !string.IsNullOrEmpty(_selectedFile) ? availRegion.X * 0.3f : 0f;
 
                 if (_showPlaylists)
                 {
@@ -156,7 +157,7 @@ public class MidiBrowserWindow : ImGuiWindow
                     ImGui.SameLine();
                 }
 
-                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f - playlistWidth, availRegion.Y)))
+                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f - playlistWidth - detailWidth, availRegion.Y)))
                 {
                     if (ImGui.BeginTable("File Table", 12, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
                     {
@@ -453,6 +454,12 @@ public class MidiBrowserWindow : ImGuiWindow
                     ImGui.EndChild();
                 }
 
+                if (!string.IsNullOrEmpty(_selectedFile))
+                {
+                    ImGui.SameLine();
+                    RenderDetailPanel(detailWidth);
+                }
+
                 ImGui.SameLine();
                 if (ImGui.BeginChild("Alphabet Scroll", new Vector2(40f, availRegion.Y)))
                 {
@@ -612,5 +619,121 @@ public class MidiBrowserWindow : ImGuiWindow
 
             RenderBrowser();
         }
+    }
+
+    private void DrawDetailRow(string label, string value)
+    {
+        ImGui.TextDisabled(label);
+        ImGui.SameLine(100);
+        ImGui.Text(value);
+    }
+
+    private void RenderDetailPanel(float width)
+    {
+        if (ImGui.BeginChild("Detail Panel", new Vector2(width, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border))
+        {
+            SongState songState = GameStateManager.GetSongState(_selectedFile);
+            string fileName = Path.GetFileName(_selectedFile);
+
+            // Close button
+            ImGui.SetCursorPos(new Vector2(width - 35, 5));
+            ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
+            if (ImGui.Button($"{FontAwesome6.Xmark}"))
+            {
+                _selectedFile = string.Empty;
+            }
+            ImGui.PopStyleColor();
+
+            ImGui.Spacing();
+            ImGui.Spacing();
+
+            // Cover Art
+            nint texPtr = TextureCache.GetTexture(songState.ThumbnailPath);
+            if (texPtr != IntPtr.Zero)
+            {
+                ImGui.SetCursorPosX((width - 150) / 2);
+                ImGui.Image(texPtr, new Vector2(150, 150));
+            }
+            else
+            {
+                ImGui.SetCursorPosX((width - 50) / 2);
+                ImGui.PushFont(FontController.Title);
+                ImGui.Text($"{FontAwesome6.Image}");
+                ImGui.PopFont();
+            }
+
+            ImGui.Spacing();
+            ImGui.Spacing();
+
+            // Title
+            ImGui.PushFont(FontController.Title);
+            string title = songState.Title ?? fileName;
+            var titleSize = ImGui.CalcTextSize(title);
+            ImGui.SetCursorPosX(Math.Max((width - titleSize.X) / 2, 5f));
+            if (titleSize.X > width - 10)
+            {
+                ImGui.TextWrapped(title);
+            }
+            else
+            {
+                ImGui.Text(title);
+            }
+            ImGui.PopFont();
+
+            // Artist
+            if (!string.IsNullOrEmpty(songState.Artist))
+            {
+                ImGui.PushFont(FontController.GetFontOfSize(18));
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.7f, 0.7f, 0.7f, 1f));
+                var artistSize = ImGui.CalcTextSize(songState.Artist);
+                ImGui.SetCursorPosX((width - artistSize.X) / 2);
+                ImGui.Text(songState.Artist);
+                ImGui.PopStyleColor();
+                ImGui.PopFont();
+            }
+
+            ImGui.Spacing();
+            ImGui.Spacing();
+
+            // Play Button
+            ImGui.PushStyleColor(ImGuiCol.Button, ThemeManager.RightHandCol * 0.8f);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ThemeManager.RightHandCol);
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, ThemeManager.RightHandCol * 1.2f);
+            ImGui.PushFont(FontController.Title);
+            ImGui.SetCursorPosX((width - 180) / 2);
+            if (ImGui.Button($"{FontAwesome6.Play} Play", new Vector2(180, 50)))
+            {
+                PlaySong(_selectedFile, songState);
+            }
+            ImGui.PopFont();
+            ImGui.PopStyleColor(3);
+
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            // Details
+            ImGui.PushFont(FontController.GetFontOfSize(18));
+            DrawDetailRow("Length:", songState.LengthSeconds > 0 ? $"{TimeSpan.FromSeconds(songState.LengthSeconds.Value):mm\\:ss}" : "-");
+            DrawDetailRow("BPM:", songState.Bpm > 0 ? songState.Bpm.ToString() : "-");
+            DrawDetailRow("Key:", songState.KeySignature ?? "-");
+            DrawDetailRow("Album:", songState.Album ?? "-");
+
+            // Difficulty Breakdown
+            if (songState.Difficulty.HasValue && songState.Difficulty > 0)
+            {
+                ImGui.Spacing();
+                ImGui.Spacing();
+                float diff = songState.Difficulty.Value;
+                Vector4 diffColor = diff <= 2f ? new Vector4(0.2f, 0.9f, 0.3f, 1f) : diff <= 3.5f ? new Vector4(1f, 0.8f, 0.1f, 1f) : new Vector4(1f, 0.3f, 0.2f, 1f);
+
+                ImGui.TextDisabled("Difficulty Rating:");
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram, diffColor);
+                ImGui.ProgressBar(diff / 5f, new Vector2(-1, 20), $"{diff:F1} / 5.0");
+                ImGui.PopStyleColor();
+            }
+            ImGui.PopFont();
+        }
+        ImGui.EndChild();
     }
 }

@@ -1295,6 +1295,7 @@ public class ScreenCanvas
         {
             LeftHandActive = !LeftHandActive;
         }
+        ImGui.SetItemTooltip("Toggle Left Hand (Mute/Hide)");
         ImGui.PopStyleColor();
         ImGui.SetCursorScreenPos(new(ImGuiUtils.FixedSize(new Vector2(190)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(110)).Y));
         ImGui.PushStyleColor(ImGuiCol.Button, RightHandActive ? ImGuiTheme.Button : ImGuiTheme.DarkButton);
@@ -1302,6 +1303,7 @@ public class ScreenCanvas
         {
             RightHandActive = !RightHandActive;
         }
+        ImGui.SetItemTooltip("Toggle Right Hand (Mute/Hide)");
         ImGui.PopStyleColor();
         ImGui.PopFont();
     }

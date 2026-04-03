@@ -1,4 +1,4 @@
-﻿using Openthesia.Core.Midi;
+using Openthesia.Core.Midi;
 using Openthesia.Enums;
 
 namespace Openthesia.Core;
@@ -16,9 +16,27 @@ public static class ScreenCanvasControls
     public static bool ShowTextNotes => _showTextNotes;
     public static bool IsLearningMode => _isLearningMode;
     public static bool IsEditMode => _isEditMode;
-    public static bool LeftHandActive { get; set; } = true;
+    private static bool _leftHandActive = true;
+    public static bool LeftHandActive
+    {
+        get => _leftHandActive;
+        set
+        {
+            _leftHandActive = value;
+            if (!_leftHandActive) MidiPlayer.SoundFontEngine?.StopAllNote(0);
+        }
+    }
 
-    public static bool RightHandActive { get; set; } = true;
+    private static bool _rightHandActive = true;
+    public static bool RightHandActive
+    {
+        get => _rightHandActive;
+        set
+        {
+            _rightHandActive = value;
+            if (!_rightHandActive) MidiPlayer.SoundFontEngine?.StopAllNote(0);
+        }
+    }
 
 
     private static float _fallSpeedVal = 2f;
