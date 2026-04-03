@@ -107,6 +107,7 @@ public class ModeSelectionWindow : ImGuiWindow
 
     public static void SetupMode(bool learningMode, bool editMode)
     {
+        AccuracyScoring.StartSession();
         ScreenCanvasControls.SetLearningMode(learningMode);
         ScreenCanvasControls.SetEditMode(editMode);
         

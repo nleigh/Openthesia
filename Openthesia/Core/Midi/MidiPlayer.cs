@@ -45,6 +45,7 @@ public static class MidiPlayer
     public static void Playback_Finished(object? sender, EventArgs e)
     {
         StopTimer();
+        AccuracyScoring.StopSession();
         if (SongQueueManager.AutoAdvance && SongQueueManager.HasNext)
         {
             ShouldAdvanceQueue = true;

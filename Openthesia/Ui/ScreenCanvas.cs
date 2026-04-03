@@ -371,7 +371,8 @@ public class ScreenCanvas
                 {
                     if (py2 > PianoRenderer.P.Y - 1.5f && py2 < PianoRenderer.P.Y)
                     {
-                        if (IsNoteEnabled(index) && !IOHandle.PressedKeys.Contains(note.NoteNumber))
+                        bool hit = IOHandle.PressedKeys.Contains(note.NoteNumber);
+                        if (IsNoteEnabled(index) && !hit)
                         {
                             missingNote = true;
                             MidiPlayer.StopTimer();
@@ -388,6 +389,12 @@ public class ScreenCanvas
                                 ImGui.GetForegroundDrawList().AddCircleFilled(new(PianoRenderer.P.X + PianoRenderer.WhiteNoteToKey.GetValueOrDefault(note.NoteNumber, 0) * PianoRenderer.Width + PianoRenderer.Width / 2,
                                     py2 + PianoRenderer.Height / 1.2f), 7, ImGui.GetColorU32(col));
                             }
+                        }
+                        
+                        if (IsNoteEnabled(index) && AccuracyScoring.IsTracking)
+                        {
+                            // We only record if it's the first time this note crosses the threshold
+                            AccuracyScoring.RecordNote(note.NoteNumber, note.Time, hit);
                         }
                     }
                 }
