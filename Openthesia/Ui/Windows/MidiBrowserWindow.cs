@@ -157,7 +157,34 @@ public class MidiBrowserWindow : ImGuiWindow
                     ImGui.SameLine();
                 }
 
-                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - 45f - playlistWidth - detailWidth, availRegion.Y)))
+                // Alphabet Scroll Sidebar (Moved to the left of the table)
+                if (ImGui.BeginChild("Alphabet Scroll", new Vector2(40f, availRegion.Y)))
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(1f, 1f, 1f, 0.1f));
+                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(1f, 1f, 1f, 0.2f));
+                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                    ImGui.PushFont(FontController.Font16_Icon16);
+                    
+                    float childHeight = ImGui.GetContentRegionAvail().Y;
+                    var letters = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                    float btnHeight = childHeight / letters.Length;
+                    
+                    foreach(var letter in letters)
+                    {
+                        if (ImGui.Button(letter.ToString(), new Vector2(40f, btnHeight)))
+                        {
+                            _scrollToLetter = letter;
+                        }
+                    }
+                    ImGui.PopFont();
+                    ImGui.PopStyleVar();
+                    ImGui.PopStyleColor(3);
+                    ImGui.EndChild();
+                }
+                ImGui.SameLine();
+
+                if (ImGui.BeginChild("Midi file list", new Vector2(availRegion.X - playlistWidth - detailWidth - 50f, availRegion.Y)))
                 {
                     if (ImGui.BeginTable("File Table", 12, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail()))
                     {
@@ -460,31 +487,7 @@ public class MidiBrowserWindow : ImGuiWindow
                     RenderDetailPanel(detailWidth);
                 }
 
-                ImGui.SameLine();
-                if (ImGui.BeginChild("Alphabet Scroll", new Vector2(40f, availRegion.Y)))
-                {
-                    ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(1f, 1f, 1f, 0.1f));
-                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(1f, 1f, 1f, 0.2f));
-                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-                    ImGui.PushFont(FontController.Font16_Icon16);
-                    
-                    float childHeight = ImGui.GetContentRegionAvail().Y;
-                    var letters = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                    float btnHeight = childHeight / letters.Length;
-                    
-                    foreach(var letter in letters)
-                    {
-                        if (ImGui.Button(letter.ToString(), new Vector2(40f, btnHeight)))
-                        {
-                            _scrollToLetter = letter;
-                        }
-                    }
-                    ImGui.PopFont();
-                    ImGui.PopStyleVar();
-                    ImGui.PopStyleColor(3);
-                    ImGui.EndChild();
-                }
+                // Removed from here (moved to left)
                 ImGui.EndChild();
             }
 
@@ -647,12 +650,13 @@ public class MidiBrowserWindow : ImGuiWindow
             ImGui.Spacing();
             ImGui.Spacing();
 
-            // Cover Art
+            // Cover Art (Scalable to width)
             nint texPtr = TextureCache.GetTexture(songState.ThumbnailPath);
             if (texPtr != IntPtr.Zero)
             {
-                ImGui.SetCursorPosX((width - 150) / 2);
-                ImGui.Image(texPtr, new Vector2(150, 150));
+                float imgSize = Math.Min(width - 40, 250);
+                ImGui.SetCursorPosX((width - imgSize) / 2);
+                ImGui.Image(texPtr, new Vector2(imgSize, imgSize));
             }
             else
             {
