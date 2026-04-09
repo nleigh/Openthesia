@@ -22,7 +22,7 @@ public class ModeSelectionWindow : ImGuiWindow
 
     public static void RenderContainer()
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ThemeManager.MainBgCol * 0.8f);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.192f, 0.192f, 0.192f, 1f) * 0.8f);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildBorderSize, 2f);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 10f);
         ImGui.SetNextWindowPos(new((ImGui.GetIO().DisplaySize.X - ImGui.GetIO().DisplaySize.X / 1.2f) / 2, ImGuiUtils.FixedSize(new Vector2(120)).Y));

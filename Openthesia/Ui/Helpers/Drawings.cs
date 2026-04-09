@@ -42,9 +42,9 @@ public class Drawings
                     float thickness = j * 2;
                     float alpha = 0.2f + (3 - j) * 0.2f;
                     uint color = ImGui.GetColorU32(new Vector4(
-                        ThemeManager.RightHandCol.X,
-                        ThemeManager.RightHandCol.Y,
-                        ThemeManager.RightHandCol.Z,
+                        0.529f,
+                        0.784f,
+                        0.325f,
                         alpha * 0.5f));
 
                     drawList.AddRect(
@@ -61,7 +61,7 @@ public class Drawings
             drawList.AddRectFilled(
                 new Vector2(baseX, y),
                 new Vector2(baseX + 20, y + length),
-                ImGui.GetColorU32(ThemeManager.RightHandCol),
+                ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f)),
                 5,
                 ImDrawFlags.RoundCornersAll
             );

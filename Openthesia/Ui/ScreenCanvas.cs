@@ -106,19 +106,18 @@ public class ScreenCanvas
             9 => new Vector4(0.6f, 0.3f, 1.0f, 1.0f), // A - Purple
             10 => new Vector4(0.7f, 0.4f, 1.0f, 1.0f), // A#
             11 => new Vector4(1.0f, 0.3f, 1.0f, 1.0f), // B - Magenta/Pink
-            _ => ThemeManager.RightHandCol
+            _ => new Vector4(0.529f, 0.784f, 0.325f, 1f) // default green
         };
 
-        if (LeftRightData.S_IsRightNote[index])
         {
-            return RightHandActive ? rainbowCol : ThemeManager.MainBgCol;
+            return RightHandActive ? rainbowCol : new Vector4(0.192f, 0.192f, 0.192f, 1f);
         }
-        return LeftHandActive ? rainbowCol : ThemeManager.MainBgCol;
+        return LeftHandActive ? rainbowCol : new Vector4(0.192f, 0.192f, 0.192f, 1f);
     }
 
     private static uint GetSharpColor(int index, Note note)
     {
-        var color = IsNoteEnabled(index) ? ImGuiUtils.DarkenColor(GetNoteColor(index, note), 0.4f) : ThemeManager.MainBgCol;
+        var color = IsNoteEnabled(index) ? ImGuiUtils.DarkenColor(GetNoteColor(index, note), 0.4f) : new Vector4(0.192f, 0.192f, 0.192f, 1f);
         return ImGui.GetColorU32(color);
     }
 
@@ -161,7 +160,7 @@ public class ScreenCanvas
                     {
                         float thickness = i * 2;
                         float alpha = 0.2f + (3 - i) * 0.2f;
-                        uint color = ImGui.GetColorU32(new Vector4(ThemeManager.RightHandCol.X, ThemeManager.RightHandCol.Y, ThemeManager.RightHandCol.Z, alpha) * 0.5f * 0.7f);
+                        uint color = ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, alpha) * 0.5f * 0.7f);
                         drawList.AddRect(
                             new(PianoRenderer.P.X + PianoRenderer.BlackNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width * 3 / 4 - 1, py1 - 1),
                             new(PianoRenderer.P.X + PianoRenderer.BlackNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width * 5 / 4 + 1, py2 + 1),
@@ -187,7 +186,7 @@ public class ScreenCanvas
 
                 drawList.AddRectFilled(new(PianoRenderer.P.X + PianoRenderer.BlackNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width * 3 / 4, py1),
                   new(PianoRenderer.P.X + PianoRenderer.BlackNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width * 5 / 4, py2),
-                  ImGui.GetColorU32(ThemeManager.RightHandCol * 0.7f), CoreSettings.NoteRoundness, ImDrawFlags.RoundCornersAll);
+                  ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f) * 0.7f), CoreSettings.NoteRoundness, ImDrawFlags.RoundCornersAll);
             }
             else
             {
@@ -197,7 +196,7 @@ public class ScreenCanvas
                     {
                         float thickness = i * 2;
                         float alpha = 0.2f + (3 - i) * 0.2f;
-                        uint color = ImGui.GetColorU32(new Vector4(ThemeManager.RightHandCol.X, ThemeManager.RightHandCol.Y, ThemeManager.RightHandCol.Z, alpha) * 0.5f);
+                        uint color = ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, alpha) * 0.5f);
                         drawList.AddRect(
                             new(PianoRenderer.P.X + PianoRenderer.WhiteNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width - 1, py1 - 1),
                             new(PianoRenderer.P.X + PianoRenderer.WhiteNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width + 1, py2 + 1),
@@ -223,7 +222,7 @@ public class ScreenCanvas
 
                 drawList.AddRectFilled(new(PianoRenderer.P.X + PianoRenderer.WhiteNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width, py1),
                     new(PianoRenderer.P.X + PianoRenderer.WhiteNoteToKey.GetValueOrDefault((SevenBitNumber)note.KeyNum, 0) * PianoRenderer.Width + PianoRenderer.Width, py2),
-                    ImGui.GetColorU32(ThemeManager.RightHandCol), CoreSettings.NoteRoundness, ImDrawFlags.RoundCornersAll);
+                    ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f)), CoreSettings.NoteRoundness, ImDrawFlags.RoundCornersAll);
             }
             index++;
         }
@@ -423,7 +422,7 @@ public class ScreenCanvas
                             _isRectMode = false;
                         }
 
-                        Vector4 rectCol = _isRightRect ? ThemeManager.RightHandCol : ThemeManager.LeftHandCol;
+                        Vector4 rectCol = _isRightRect ? new Vector4(0.529f, 0.784f, 0.325f, 1f) : new Vector4(0.831f, 0.031f, 0.290f, 1f);
                         var v3 = new Vector3(rectCol.X, rectCol.Y, rectCol.Z);
                         ImGui.GetWindowDrawList().AddRectFilled(_rectStart, ImGui.GetMousePos(), ImGui.GetColorU32(new Vector4(v3, .005f)));
 
@@ -793,15 +792,15 @@ public class ScreenCanvas
             {
                 var chordTxtSize = ImGui.CalcTextSize(chord);
                 Drawings.AddTextOutlined(ImGui.GetWindowDrawList(), new Vector2(ImGui.GetIO().DisplaySize.X / 2 - chordTxtSize.X / 2, PianoRenderer.P.Y - chordTxtSize.Y - 20),
-                    ImGui.GetColorU32(ThemeManager.RightHandCol), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), chord, 2.0f);
+                    ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f)), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), chord, 2.0f);
             }
 
             if (!string.IsNullOrEmpty(UpcomingLeftChordStr))
             {
                 var upTxtSize = ImGui.CalcTextSize(UpcomingLeftChordStr);
                 // Position it a bit to the left and slightly higher than the live chord
-                Drawings.AddTextOutlined(ImGui.GetWindowDrawList(), new Vector2(ImGui.GetIO().DisplaySize.X / 2 - upTxtSize.X / 2 - CoreSettings.UpcomingChordTextXOffset * FontController.DSF, PianoRenderer.P.Y - upTxtSize.Y - CoreSettings.UpcomingChordTextYOffset * FontController.DSF),
-                    ImGui.GetColorU32(ThemeManager.LeftHandCol), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), $"Next (L): {UpcomingLeftChordStr}", 2.0f);
+                    Drawings.AddTextOutlined(ImGui.GetWindowDrawList(), new Vector2(ImGui.GetIO().DisplaySize.X / 2 - upTxtSize.X / 2 - CoreSettings.UpcomingChordTextXOffset * FontController.DSF, PianoRenderer.P.Y - upTxtSize.Y - CoreSettings.UpcomingChordTextYOffset * FontController.DSF),
+                    ImGui.GetColorU32(new Vector4(0.831f, 0.031f, 0.290f, 1f)), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), $"Next (L): {UpcomingLeftChordStr}", 2.0f);
             }
 
             GetInputs();
@@ -904,7 +903,7 @@ public class ScreenCanvas
     {
         ImGui.SetNextItemWidth(ImGui.GetIO().DisplaySize.X);
 
-        var pBarBg = new Vector3(ThemeManager.MainBgCol.X, ThemeManager.MainBgCol.Y, ThemeManager.MainBgCol.Z);
+        var pBarBg = new Vector3(0.192f, 0.192f, 0.192f);
         var oldFrameBg = ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBg];
         var oldFrameBgHovered = ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgHovered];
         var oldFrameBgActive = ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgActive];
@@ -914,8 +913,8 @@ public class ScreenCanvas
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBg] = new Vector4(pBarBg, 0.8f);
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgHovered] = new Vector4(pBarBg, 0.8f);
         ImGuiTheme.Style.Colors[(int)ImGuiCol.FrameBgActive] = new Vector4(pBarBg, 0.8f);
-        ImGuiTheme.Style.Colors[(int)ImGuiCol.SliderGrab] = ThemeManager.RightHandCol;
-        ImGuiTheme.Style.Colors[(int)ImGuiCol.SliderGrabActive] = ThemeManager.RightHandCol;
+        ImGuiTheme.Style.Colors[(int)ImGuiCol.SliderGrab] = new Vector4(0.529f, 0.784f, 0.325f, 1f);
+        ImGuiTheme.Style.Colors[(int)ImGuiCol.SliderGrabActive] = new Vector4(0.529f, 0.784f, 0.325f, 1f);
 
         if (ImGui.SliderFloat("##Progress slider", ref MidiPlayer.Seconds, 0, (float)MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, "%.1f",
             ImGuiSliderFlags.NoRoundToFormat | ImGuiSliderFlags.AlwaysClamp | ImGuiSliderFlags.NoInput))
@@ -934,7 +933,7 @@ public class ScreenCanvas
         var pBarHeight = ImGui.GetItemRectSize().Y;
         var playbackPercentage = MidiPlayer.Seconds * 100 / (float)MidiFileData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
         var pBarWidth = ImGui.GetIO().DisplaySize.X * playbackPercentage / 100;
-        var v3 = new Vector3(ThemeManager.RightHandCol.X, ThemeManager.RightHandCol.Y, ThemeManager.RightHandCol.Z);
+        var v3 = new Vector3(0.529f, 0.784f, 0.325f);
         ImGui.GetWindowDrawList().AddRectFilled(Vector2.Zero, new Vector2(pBarWidth, pBarHeight), ImGui.GetColorU32(new Vector4(v3, 0.2f)));
 
         // Draw loop markers
@@ -971,7 +970,7 @@ public class ScreenCanvas
         ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X / 2 - ImGuiUtils.FixedSize(new Vector2(165)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(50)).Y));
         if (ImGui.BeginChild("Player controls", ImGuiUtils.FixedSize(new Vector2(335, 50)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
-            var playColor = !MidiPlayer.IsTimerRunning ? Vector4.One : ThemeManager.RightHandCol;
+            var playColor = !MidiPlayer.IsTimerRunning ? Vector4.One : new Vector4(0.529f, 0.784f, 0.325f, 1f);
 
             ImGui.PushFont(FontController.Font16_Icon16);
             
@@ -1348,16 +1347,18 @@ public class ScreenCanvas
         }
         ImGui.PopFont();
 
-        // LEFT HAND COLOR PICKER
+        // LEFT HAND COLOR EDIT (Placeholders/Disabled logic)
         ImGui.SetCursorScreenPos(new(ImGuiUtils.FixedSize(new Vector2(70)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(110)).Y));
-        ImGui.ColorEdit4("Left Hand Color", ref ThemeManager.LeftHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel
+        Vector4 leftPlaceholder = new Vector4(0.831f, 0.031f, 0.290f, 1f);
+        ImGui.ColorEdit4("Left Hand Color", ref leftPlaceholder, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel
             | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoOptions | ImGuiColorEditFlags.NoAlpha);
 
         _leftHandColorPicker = ImGui.IsPopupOpen("Left Hand Colorpicker");
 
-        // RIGHT HAND COLOR PICKER
+        // RIGHT HAND COLOR EDIT
         ImGui.SetCursorScreenPos(new(ImGuiUtils.FixedSize(new Vector2(115)).X, CanvasPos.Y + ImGuiUtils.FixedSize(new Vector2(110)).Y));
-        ImGui.ColorEdit4("Right Hand Color", ref ThemeManager.RightHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel
+        Vector4 rightPlaceholder = new Vector4(0.529f, 0.784f, 0.325f, 1f);
+        ImGui.ColorEdit4("Right Hand Color", ref rightPlaceholder, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel
             | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoOptions | ImGuiColorEditFlags.NoAlpha);
 
         _rightHandColorPicker = ImGui.IsPopupOpen("Right Hand Colorpicker");

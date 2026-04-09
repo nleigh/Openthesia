@@ -1,0 +1,124 @@
+Implement all of these in separate commits
+ 3. Difficulty Rating
+Analyze MIDI files to compute an estimated difficulty score (based on note density, tempo, hand spread, polyphony). Display as a star rating or difficulty bar in the browser table. Would help beginners pick appropriate songs.
+
+Complexity: Medium-High
+
+4. Song Preview on Hover
+When hovering over a song row for 1-2 seconds, play a short 5-second audio preview (start from the loudest/densest section). Similar to Spotify's hover preview.
+
+Complexity: Medium
+
+1. Playlists / Song Queues
+Create named playlists from the browser. Users could drag songs into playlists, then play them back-to-back with auto-advance. The GameState.json could store a List<Playlist> alongside Songs.
+
+Complexity: Medium
+
+8. Section Looping / A-B Repeat
+Allow users to set loop markers (A and B points) on the timeline to practice a specific section repeatedly. Essential for learning difficult passages.
+
+Complexity: Medium
+
+9. Speed Control / Tempo Slider
+A real-time tempo slider (50% to 150%) so users can slow down difficult passages or speed up easy ones. The slider could live in the playback controls bar.
+
+Complexity: Medium
+
+10. Note Accuracy Scoring (Learning Mode)
+In Learning Mode, track which notes were hit correctly vs missed and display a score/accuracy percentage at the end. Could show a heatmap of the keyboard highlighting problem areas.
+
+Complexity: High
+
+12. Waterfall vs. Sheet Music Toggle
+Offer an alternative "sheet music" style visualization alongside the current waterfall/falling notes view. Even a simplified staff notation overlay would help classically-trained players.
+
+Complexity: High
+
+13. Measure / Bar Lines
+Draw faint horizontal lines on the waterfall view at each bar/measure boundary. Helps users anticipate phrasing and timing.
+
+Complexity: Low-Medium
+
+14. Countdown / Pre-Roll
+Add a visual 3-2-1 countdown before playback starts, giving the player time to position their hands.
+
+Complexity: Low
+
+15. Chord Progression Display
+Show the current chord name (Am, G7, Cmaj, etc.) above the keyboard in real-time as notes are played. The chord detection logic could analyze the active note cluster.
+
+Complexity: Medium
+
+18. Hand Separation Practice
+Option to mute one hand entirely and play only the other. Useful for learning each hand independently before combining.
+
+Complexity: Low-Medium (partially exists via track toggles)
+
+24. Keyboard Shortcuts
+Global keyboard shortcuts: Space for play/pause, R for restart, ←/→ for seek, +/- for tempo, F for favorite toggle. Currently some shortcuts exist but many are missing.
+
+Complexity: Low
+
+25. Dark/Light Theme Toggle
+A quick toggle (moon/sun icon) in the top bar to switch between dark and light themes without going into Settings.
+
+Complexity: Low
+
+26. Song Detail Panel
+When a song is selected (single-clicked) in the browser, show a detail panel below or to the side with large album art, full metadata, play history graph, and action buttons.
+
+Complexity: Medium
+
+27. Animated Transitions
+Smooth fade/slide transitions between windows (Home → Browser → Playback) instead of instant swaps. Would make the app feel more polished.
+
+Complexity: Medium
+
+28. Tooltip on Keyboard Keys
+When hovering over a piano key during playback, show the note name and octave (e.g., "C4", "F#5").
+
+Complexity: Low
+
+29. Fullscreen Mode
+A dedicated fullscreen toggle that hides the OS title bar for an immersive experience during playback/recording.
+
+Complexity: Low
+
+
+33. Multi-Directory Watch (FileSystemWatcher)
+Instead of periodic polling, use FileSystemWatcher to instantly detect when new MIDI files are added to configured directories. The browser would update in real-time.
+
+Complexity: Low
+
+34. Parallel Metadata Fetching
+Currently metadata is fetched one song at a time with a 500ms delay. Could use SemaphoreSlim to allow 3-4 concurrent fetches while still respecting rate limits.
+
+Complexity: Low
+
+35. LRU Texture Eviction
+If the library grows to thousands of songs, the TextureCache could consume significant GPU memory. An LRU (Least Recently Used) eviction policy would cap memory usage by unloading textures for off-screen songs.
+
+Complexity: Medium
+
+36. Crash Recovery / Auto-Save State
+Periodically auto-save GameState.json (every 60s) instead of only on explicit actions, so favorites/play counts aren't lost if the app crashes.
+
+Complexity: Low
+
+C:\Program Files (x86)\Steam\steamapps\common\Rocksmith2014\dlc
+DLC_PATH=/path/to/your/Rocksmith2014/dlc docker compose up -d
+DLC_PATH=C:\Program Files (x86)\Steam\steamapps\common\Rocksmith2014\dlc docker compose up -d
+
+
+======
+🚧 Partially Completed / In Progress
+26. Song Detail Panel: Recent work on the MIDI Browser layout (64fd72f) specifically mentions fixing the details panel.
+
+❌ Remaining
+12. Waterfall vs. Sheet Music Toggle
+15. Chord Progression Display
+18. Hand Separation Practice
+36. Crash Recovery / Auto-Save State@tasks
+
+
+ADD 240 FPS MODE

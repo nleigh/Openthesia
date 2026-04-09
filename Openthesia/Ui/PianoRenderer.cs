@@ -11,10 +11,10 @@ namespace Openthesia.Ui;
 
 public class PianoRenderer
 {
-    static uint _black = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#141414"));
-    static uint _white = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#FFFFFF"));
-    static uint _whitePressed = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#888888"));
-    static uint _blackPressed = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#555555"));
+    static uint _black => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#141414"));
+    static uint _white => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#FFFFFF"));
+    static uint _whitePressed => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#888888"));
+    static uint _blackPressed => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#555555"));
 
     public static float Width;
     public static float Height;
@@ -103,7 +103,7 @@ public class PianoRenderer
             if (isPressed || isApproaching)
             {
                 float alpha = isPressed ? 1.0f : appInfo.Alpha;
-                Vector4 rawCol = isApproaching ? appInfo.Color : ThemeManager.RightHandCol;
+                Vector4 rawCol = isApproaching ? appInfo.Color : new Vector4(0.529f, 0.784f, 0.325f, 1f);
                 Vector3 baseCol = Vector3.One;
                 Vector3 targetCol = new Vector3(rawCol.X, rawCol.Y, rawCol.Z);
                 Vector3 lerpedCol = baseCol + (targetCol - baseCol) * alpha;
@@ -193,7 +193,7 @@ public class PianoRenderer
                 if (isPressed || isApproaching)
                 {
                     float alpha = isPressed ? 1.0f : appInfo.Alpha;
-                    Vector4 rawCol = isApproaching ? appInfo.Color : ThemeManager.RightHandCol;
+                    Vector4 rawCol = isApproaching ? appInfo.Color : new Vector4(0.529f, 0.784f, 0.325f, 1f);
                     Vector3 darkGray = new Vector3(0.15f, 0.15f, 0.15f);
                     Vector3 targetCol = new Vector3(rawCol.X, rawCol.Y, rawCol.Z);
                     Vector3 lerpedCol = darkGray + (targetCol - darkGray) * alpha;

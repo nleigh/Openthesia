@@ -10,7 +10,6 @@ using static Openthesia.Settings.AudioDriverManager;
 using static Openthesia.Settings.DevicesManager;
 using static Openthesia.Settings.MidiPathsManager;
 using static Openthesia.Settings.SoundFontsPathsManager;
-using static Openthesia.Settings.ThemeManager;
 using Openthesia.Ui.Helpers;
 using Openthesia.Core;
 using Openthesia.Core.FileDialogs;
@@ -622,12 +621,6 @@ public class SettingsWindow : ImGuiWindow
 
         ImGui.Dummy(new(10));
 
-        ImGui.ColorEdit4("Background color", ref MainBgCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
-        ImGui.ColorEdit4("Right Hand color", ref RightHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
-        ImGui.ColorEdit4("Left Hand color", ref LeftHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
         ImGui.Checkbox("Notes glow FX", ref NeonFx);
         Drawings.Tooltip("Adds a subtle glowing effect around each note");
 
@@ -645,24 +638,12 @@ public class SettingsWindow : ImGuiWindow
 
         ImGui.Dummy(new(10));
 
-        ImGuiTheme.PushButton(ImGuiTheme.HtmlToVec4("#0284C7"), ImGuiTheme.HtmlToVec4("#0284C7"), ImGuiTheme.HtmlToVec4("#0284C7"));
-        if (ImGui.BeginCombo($"Theme {FontAwesome6.PaintRoller}", Theme.ToString()))
-        {
-            foreach (var theme in Enum.GetValues(typeof(Themes)))
-            {
-                if (ImGui.Selectable(theme.ToString()))
-                {
-                    SetTheme((Themes)theme);
-                }
-            }
-            ImGui.EndCombo();
-        }
-        ImGuiTheme.PopButton();
+        ImGui.Dummy(new(10));
 
         ImGui.EndChild();
         ImGui.EndChild();
 
         ImGui.PopFont();
-        ImGuiTheme.PushTheme();
+        ImGuiTheme.Init();
     }
 }

@@ -26,7 +26,7 @@ public class MidiPlaybackWindow : ImGuiWindow
 
         Vector2 lineStart = new(0, ImGui.GetCursorPos().Y);
         Vector2 lineEnd = new(ImGui.GetContentRegionAvail().X, ImGui.GetCursorPos().Y);
-        uint lineColor = ImGui.GetColorU32(ThemeManager.RightHandCol);
+        uint lineColor = ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f));
         const float lineThickness = 2f;
         ImGui.GetForegroundDrawList().AddLine(lineStart, lineEnd, lineColor, lineThickness);
 

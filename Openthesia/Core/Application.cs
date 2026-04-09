@@ -64,28 +64,6 @@ public class Application
                 window.RenderWindow();
         }
 
-        // Render global theme toggle
-        ImGui.SetNextWindowPos(new System.Numerics.Vector2(ImGui.GetIO().DisplaySize.X - 60, 10));
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, System.Numerics.Vector4.Zero);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
-        if (ImGui.Begin("##GlobalThemeToggle", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize))
-        {
-            ImGui.PushFont(FontController.Font16_Icon16);
-            string icon = Settings.ThemeManager.Theme == Enums.Themes.Light ? IconFonts.FontAwesome6.Moon : IconFonts.FontAwesome6.Sun;
-            if (ImGui.Button(icon, new System.Numerics.Vector2(40, 40)))
-            {
-                if (Settings.ThemeManager.Theme == Enums.Themes.Light)
-                    Settings.ThemeManager.SetTheme(Enums.Themes.Sky);
-                else
-                    Settings.ThemeManager.SetTheme(Enums.Themes.Light);
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Toggle Light/Dark Theme");
-            ImGui.PopFont();
-            ImGui.End();
-        }
-        ImGui.PopStyleVar();
-        ImGui.PopStyleColor();
         ImGuiController.UpdateMouseCursor();
     }
 

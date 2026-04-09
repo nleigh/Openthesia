@@ -90,7 +90,8 @@ public class MidiBrowserWindow : ImGuiWindow
             }
 
             ImGui.SameLine();
-            ImGui.InputTextWithHint($"Search {FontAwesome6.MagnifyingGlass}", "Search midi file...", ref _searchBuffer, 1000);
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 50); // Leave space for trailing label if any
+            ImGui.InputTextWithHint("##search_input", $"Search {FontAwesome6.MagnifyingGlass}...", ref _searchBuffer, 1000);
             ImGui.EndChild();
         }
     }
@@ -100,7 +101,7 @@ public class MidiBrowserWindow : ImGuiWindow
         Drawings.RenderMatrixBackground();
 
         // browser theme
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ThemeManager.MainBgCol * 0.8f);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.192f, 0.192f, 0.192f, 1f) * 0.8f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImGuiUtils.FixedSize(new Vector2(10)));
 
         using (AutoFont font22 = new(FontController.GetFontOfSize(22)))
@@ -306,7 +307,7 @@ public class MidiBrowserWindow : ImGuiWindow
                             // Play Column
                             ImGui.TableSetColumnIndex(0);
                             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 15f);
-                            ImGui.PushStyleColor(ImGuiCol.Text, ThemeManager.RightHandCol);
+                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.529f, 0.784f, 0.325f, 1f));
                             if (ImGui.Button($"{FontAwesome6.Play}##play_{file}"))
                             {
                                 PlaySong(file, songState);
@@ -627,19 +628,20 @@ public class MidiBrowserWindow : ImGuiWindow
     private void DrawDetailRow(string label, string value)
     {
         ImGui.TextDisabled(label);
-        ImGui.SameLine(100);
-        ImGui.Text(value);
+        ImGui.SameLine(100 * FontController.DSF);
+        ImGui.TextWrapped(value);
     }
 
     private void RenderDetailPanel(float width)
     {
-        if (ImGui.BeginChild("Detail Panel", new Vector2(width, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border))
+        // Make the detailed info scrollable if it doesn't fit
+        if (ImGui.BeginChild("Detail Panel", new Vector2(width, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border, ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.HorizontalScrollbar))
         {
             SongState songState = GameStateManager.GetSongState(_selectedFile);
             string fileName = Path.GetFileName(_selectedFile);
 
             // Close button
-            ImGui.SetCursorPos(new Vector2(width - 35, 5));
+            ImGui.SetCursorPos(new Vector2(width - 45, 5));
             ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
             if (ImGui.Button($"{FontAwesome6.Xmark}"))
             {
@@ -669,17 +671,26 @@ public class MidiBrowserWindow : ImGuiWindow
             ImGui.Spacing();
             ImGui.Spacing();
 
-            // Title
+            // Title & Artist Section (Scrollable or scaled)
             ImGui.PushFont(FontController.Title);
             string title = songState.Title ?? fileName;
             var titleSize = ImGui.CalcTextSize(title);
-            ImGui.SetCursorPosX(Math.Max((width - titleSize.X) / 2, 5f));
+            
+            // Limit font size if title is too enormous or wraps too much
+            bool useSmallFont = title.Length > 25 || titleSize.X > (width * 1.5f);
+            if (useSmallFont) ImGui.PopFont();
+            if (useSmallFont) ImGui.PushFont(FontController.GetFontOfSize((int)(24 * FontController.DSF)));
+
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 10 * FontController.DSF)); // More vertical space
+            
+            titleSize = ImGui.CalcTextSize(title); // Recalculate based on active font
             if (titleSize.X > width - 10)
             {
                 ImGui.TextWrapped(title);
             }
             else
             {
+                ImGui.SetCursorPosX((width - titleSize.X) / 2);
                 ImGui.Text(title);
             }
             ImGui.PopFont();
@@ -687,25 +698,32 @@ public class MidiBrowserWindow : ImGuiWindow
             // Artist
             if (!string.IsNullOrEmpty(songState.Artist))
             {
-                ImGui.PushFont(FontController.GetFontOfSize(18));
-                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.7f, 0.7f, 0.7f, 1f));
+                ImGui.PushFont(FontController.GetFontOfSize((int)(18 * FontController.DSF)));
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f));
                 var artistSize = ImGui.CalcTextSize(songState.Artist);
-                ImGui.SetCursorPosX((width - artistSize.X) / 2);
-                ImGui.Text(songState.Artist);
+                ImGui.SetCursorPosX(Math.Max(0, (width - artistSize.X) / 2));
+                ImGui.TextWrapped(songState.Artist);
                 ImGui.PopStyleColor();
                 ImGui.PopFont();
             }
+            ImGui.PopStyleVar();
 
             ImGui.Spacing();
             ImGui.Spacing();
 
             // Play Button
-            ImGui.PushStyleColor(ImGuiCol.Button, ThemeManager.RightHandCol * 0.8f);
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ThemeManager.RightHandCol);
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, ThemeManager.RightHandCol * 1.2f);
-            ImGui.PushFont(FontController.Title);
-            ImGui.SetCursorPosX((width - 180) / 2);
-            if (ImGui.Button($"{FontAwesome6.Play} Play", new Vector2(180, 50)))
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.529f, 0.784f, 0.325f, 1f) * 0.8f);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.529f, 0.784f, 0.325f, 1f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.529f, 0.784f, 0.325f, 1f) * 1.2f);
+            ImGui.PushFont(FontController.GetFontOfSize((int)(30 * FontController.DSF)));
+            
+            string playBtnText = $"{FontAwesome6.Play} Play";
+            var playBtnSize = ImGui.CalcTextSize(playBtnText);
+            float btnWidth = Math.Max(playBtnSize.X + 60f * FontController.DSF, Math.Min(200f * FontController.DSF, width - 40f));
+            float btnHeight = playBtnSize.Y + 30f * FontController.DSF;
+            
+            ImGui.SetCursorPosX(Math.Max(0, (width - btnWidth) / 2));
+            if (ImGui.Button(playBtnText, new Vector2(btnWidth, btnHeight)))
             {
                 PlaySong(_selectedFile, songState);
             }
@@ -717,7 +735,7 @@ public class MidiBrowserWindow : ImGuiWindow
             ImGui.Spacing();
 
             // Details
-            ImGui.PushFont(FontController.GetFontOfSize(18));
+            ImGui.PushFont(FontController.GetFontOfSize((int)(18 * FontController.DSF)));
             DrawDetailRow("Length:", songState.LengthSeconds > 0 ? $"{TimeSpan.FromSeconds(songState.LengthSeconds.Value):mm\\:ss}" : "-");
             DrawDetailRow("BPM:", songState.Bpm > 0 ? songState.Bpm.ToString() : "-");
             DrawDetailRow("Key:", songState.KeySignature ?? "-");
