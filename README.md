@@ -31,6 +31,19 @@ In the Play mode you can visualize midi inputs as rising note blocks and also re
 - **Video recording**: capture video of your MIDI playbacks or performances and export them directly.
 - **Plugins support**: use your favorite VST2 instruments and audio effects directly inside Openthesia!
 
+## 🚀 Antigravity Enhancements (Fork Features)
+
+This fork includes several experimental features and logic optimizations designed by the Google Antigravity AI to enhance the learning and visual experience:
+
+- **🏅 Note Accuracy Scoring**: Real-time tracking of performance with a results heatmap for post-song review.
+- **🌙 Global Theme Engine**: Seamless Dark/Light mode toggle with smooth, animated window transitions.
+- **💡 Interactive Keyboard Tooltips**: Real-time musical note names and octave identification displayed directly on the piano keys.
+- **🔍 Advanced MIDI Browser**: Alphabetical scrollbar, audio song previews on hover, and rich metadata (Artist, Album, Year) integration.
+- **🔁 A-B Looping & Playlists**: Dedicated tools for focused practice on difficult sections and automated song queue management.
+- **⏲️ Playback Countdown**: A visual 3-2-1 timer with pulsing animations to ensure you're ready for the first note.
+- **⚙️ Performance Core**: Parallel metadata loading and intelligent texture caching for snappy navigation in large libraries.
+
+
 ## What operating systems does it support? :desktop_computer:
 
 Openthesia is officially supported on **Windows**.

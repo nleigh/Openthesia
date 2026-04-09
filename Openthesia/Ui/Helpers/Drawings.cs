@@ -1,8 +1,9 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Melanchall.DryWetMidi.Interaction;
 using Openthesia.Enums;
 using Openthesia.Settings;
 using System.Numerics;
+using System.Linq;
 
 namespace Openthesia.Ui.Helpers;
 
@@ -41,9 +42,9 @@ public class Drawings
                     float thickness = j * 2;
                     float alpha = 0.2f + (3 - j) * 0.2f;
                     uint color = ImGui.GetColorU32(new Vector4(
-                        ThemeManager.RightHandCol.X,
-                        ThemeManager.RightHandCol.Y,
-                        ThemeManager.RightHandCol.Z,
+                        0.529f,
+                        0.784f,
+                        0.325f,
                         alpha * 0.5f));
 
                     drawList.AddRect(
@@ -60,7 +61,7 @@ public class Drawings
             drawList.AddRectFilled(
                 new Vector2(baseX, y),
                 new Vector2(baseX + 20, y + length),
-                ImGui.GetColorU32(ThemeManager.RightHandCol),
+                ImGui.GetColorU32(new Vector4(0.529f, 0.784f, 0.325f, 1f)),
                 5,
                 ImDrawFlags.RoundCornersAll
             );
@@ -101,5 +102,47 @@ public class Drawings
             default:
                 return note.NoteName.ToString();
         }
+    }
+
+    public static void AddTextOutlined(ImDrawListPtr drawList, Vector2 pos, uint textColor, uint outlineColor, string text, float thickness = 1.0f)
+    {
+        drawList.AddText(pos + new Vector2(-thickness, 0), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, 0), outlineColor, text);
+        drawList.AddText(pos + new Vector2(0, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(0, thickness), outlineColor, text);
+        
+        drawList.AddText(pos + new Vector2(-thickness, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, -thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(-thickness, thickness), outlineColor, text);
+        drawList.AddText(pos + new Vector2(thickness, thickness), outlineColor, text);
+
+        drawList.AddText(pos, textColor, text);
+    }
+
+    private static List<int> _cachedPressedKeys = new List<int>();
+    private static string _cachedChord = "";
+
+    public static string GetDetectedChord()
+    {
+        var keys = Openthesia.Core.IOHandle.PressedKeys.ToList();
+        if (keys.SequenceEqual(_cachedPressedKeys))
+            return _cachedChord;
+
+        _cachedPressedKeys = keys;
+        _cachedChord = "";
+
+        if (keys.Count < 3) return "";
+        
+        try 
+        {
+            var noteNames = keys.Select(k => Melanchall.DryWetMidi.MusicTheory.Note.Get((Melanchall.DryWetMidi.Common.SevenBitNumber)k).NoteName).Distinct().ToList();
+            var chord = new Melanchall.DryWetMidi.MusicTheory.Chord(noteNames);
+            var chordNames = chord.GetNames();
+            if (chordNames.Any())
+                _cachedChord = chordNames.First();
+        }
+        catch { }
+
+        return _cachedChord;
     }
 }

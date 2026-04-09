@@ -1,5 +1,6 @@
-﻿using IconFonts;
+using IconFonts;
 using ImGuiNET;
+using Syroot.Windows.IO;
 using Melanchall.DryWetMidi.Multimedia;
 using NAudio.Wave;
 using System.Numerics;
@@ -9,7 +10,6 @@ using static Openthesia.Settings.AudioDriverManager;
 using static Openthesia.Settings.DevicesManager;
 using static Openthesia.Settings.MidiPathsManager;
 using static Openthesia.Settings.SoundFontsPathsManager;
-using static Openthesia.Settings.ThemeManager;
 using Openthesia.Ui.Helpers;
 using Openthesia.Core;
 using Openthesia.Core.FileDialogs;
@@ -178,6 +178,31 @@ public class SettingsWindow : ImGuiWindow
                 }
             }
         }
+
+        // DATA & CACHE
+        ImGui.Dummy(new(50));
+        ImGui.Text($"DATA & CACHE {FontAwesome6.Database}");
+        ImGui.Spacing();
+
+        if (ImGui.Button($"{FontAwesome6.TrashCan} Clear Metadata Cache", ImGuiUtils.FixedSize(new Vector2(250, 40))))
+        {
+            TextureCache.ClearCache();
+            GameStateManager.ClearAllMetadata();
+            GameStateManager.SaveState();
+
+            string cacheDir = Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia", "Cache", "Thumbnails");
+            if (Directory.Exists(cacheDir))
+            {
+                foreach (var file in Directory.GetFiles(cacheDir))
+                {
+                    try { File.Delete(file); } catch { }
+                }
+            }
+            User32.MessageBox(IntPtr.Zero, "Metadata cache cleared successfully.", "Success", User32.MB_FLAGS.MB_ICONINFORMATION | User32.MB_FLAGS.MB_TOPMOST);
+        }
+        Drawings.Tooltip("Clears all fetched metadata (Album, BPM, Artworks, Plays, Favorites) and downloaded thumbnails to free up space or fix incorrect data.");
+
+        ImGui.Dummy(new(50));
 
         // SOUND
         ImGui.Text($"SOUND {FontAwesome6.Music}");
@@ -596,12 +621,6 @@ public class SettingsWindow : ImGuiWindow
 
         ImGui.Dummy(new(10));
 
-        ImGui.ColorEdit4("Background color", ref MainBgCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
-        ImGui.ColorEdit4("Right Hand color", ref RightHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
-        ImGui.ColorEdit4("Left Hand color", ref LeftHandCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoDragDrop);
-        ImGui.SameLine();
         ImGui.Checkbox("Notes glow FX", ref NeonFx);
         Drawings.Tooltip("Adds a subtle glowing effect around each note");
 
@@ -619,24 +638,12 @@ public class SettingsWindow : ImGuiWindow
 
         ImGui.Dummy(new(10));
 
-        ImGuiTheme.PushButton(ImGuiTheme.HtmlToVec4("#0284C7"), ImGuiTheme.HtmlToVec4("#0284C7"), ImGuiTheme.HtmlToVec4("#0284C7"));
-        if (ImGui.BeginCombo($"Theme {FontAwesome6.PaintRoller}", Theme.ToString()))
-        {
-            foreach (var theme in Enum.GetValues(typeof(Themes)))
-            {
-                if (ImGui.Selectable(theme.ToString()))
-                {
-                    SetTheme((Themes)theme);
-                }
-            }
-            ImGui.EndCombo();
-        }
-        ImGuiTheme.PopButton();
+        ImGui.Dummy(new(10));
 
         ImGui.EndChild();
         ImGui.EndChild();
 
         ImGui.PopFont();
-        ImGuiTheme.PushTheme();
+        ImGuiTheme.Init();
     }
 }

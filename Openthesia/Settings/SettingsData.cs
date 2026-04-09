@@ -1,4 +1,4 @@
-﻿using Openthesia.Enums;
+using Openthesia.Enums;
 using System.Numerics;
 
 namespace Openthesia.Settings;
@@ -22,10 +22,6 @@ public class SettingsData
     public bool FpsCounter;
     public int NoteRoundness;
 
-    public Themes Theme;
-    public Vector4 MainBg;
-    public Vector4 R_HandColor;
-    public Vector4 L_HandColor;
 
     public bool LockTopBar;
     public bool UpDirection;

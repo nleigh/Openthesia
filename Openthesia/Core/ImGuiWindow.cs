@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System.Numerics;
 
 namespace Openthesia.Core;
@@ -32,6 +32,8 @@ public abstract class ImGuiWindow
     /// Timer utility
     /// </summary>
     protected float _timer = 0f;
+    protected float _fadeInTimer = 0f;
+    protected const float FadeDuration = 0.3f;
 
     public string GetId()
     {
@@ -45,6 +47,10 @@ public abstract class ImGuiWindow
 
     public void SetActive(bool active)
     {
+        if (active && !_active)
+        {
+            _fadeInTimer = 0f;
+        }
         _active = active;
     }
 
@@ -53,10 +59,17 @@ public abstract class ImGuiWindow
     /// </summary>
     public void RenderWindow()
     {
+        float fadeAlpha = 1f;
+        if (_fadeInTimer < FadeDuration)
+        {
+            _fadeInTimer += _io.DeltaTime;
+            fadeAlpha = Math.Clamp(_fadeInTimer / FadeDuration, 0f, 1f);
+        }
+
+        ImGui.PushStyleVar(ImGuiStyleVar.Alpha, fadeAlpha);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
         if (ImGui.Begin(_id, ref _active, _windowFlags))
         {
-            ImGui.PopStyleVar();
             if (_isMainWindow)
             {
                 ImGui.SetWindowPos(Vector2.Zero);
@@ -67,6 +80,8 @@ public abstract class ImGuiWindow
             OnImGui();
             ImGui.End();
         }
+        ImGui.PopStyleVar(); // WindowBorderSize
+        ImGui.PopStyleVar(); // Alpha
     }
 
     /// <summary>

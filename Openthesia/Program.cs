@@ -1,4 +1,4 @@
-﻿using Veldrid.Sdl2;
+using Veldrid.Sdl2;
 using Veldrid;
 using System.Diagnostics;
 using Veldrid.StartupUtilities;
@@ -15,9 +15,9 @@ class Program
 {
     public static bool IsRunning = true;
     public static Sdl2Window _window;
-    private static GraphicsDevice _gd;
+    public static GraphicsDevice _gd;
     private static CommandList _cl;
-    private static ImGuiController _controller;
+    public static ImGuiController _controller;
     private static Vector3 _clearColor = new(0.45f, 0.55f, 0.6f);
 
     [STAThread]
@@ -26,7 +26,7 @@ class Program
         User32.SetProcessDPIAware();
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Maximized, $"Openthesia {ProgramData.ProgramVersion}"),
+            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Maximized, $"Openthesia Nathan {ProgramData.ProgramVersion}"),
             new GraphicsDeviceOptions(false, null, true, ResourceBindingModel.Improved, true, true),
             out _window,
             out _gd);

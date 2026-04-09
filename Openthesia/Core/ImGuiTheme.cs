@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Openthesia.Settings;
 using System.Numerics;
 using Openthesia.Ui.Helpers;
@@ -25,15 +25,16 @@ public static class ImGuiTheme
         return new Vector4(r / 255f, g / 255f, b / 255f, alpha);
     }
 
-    public static void PushTheme()
+    public static void Init()
     {
         Style = ImGui.GetStyle();
         Style.FrameRounding = 4;
         Style.FramePadding = new Vector2(5, 7);
         Style.WindowPadding = Vector2.Zero;
+
         Style.Colors[(int)ImGuiCol.Text] = Vector4.One;
         Style.Colors[(int)ImGuiCol.MenuBarBg] = HtmlToVec4("#1F2937");
-        Style.Colors[(int)ImGuiCol.WindowBg] = ThemeManager.MainBgCol;
+        Style.Colors[(int)ImGuiCol.WindowBg] = new Vector4(0.192f, 0.192f, 0.192f, 1f); // #313131
         Style.Colors[(int)ImGuiCol.Button] = Button;
         Style.Colors[(int)ImGuiCol.ButtonHovered] = ButtonHovered;
         Style.Colors[(int)ImGuiCol.ButtonActive] = ButtonActive;

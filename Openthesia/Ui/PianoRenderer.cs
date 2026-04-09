@@ -1,19 +1,20 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Openthesia.Core;
 using Openthesia.Settings;
 using Openthesia.Ui.Helpers;
 using System.Numerics;
+using System.Linq;
 
 namespace Openthesia.Ui;
 
 public class PianoRenderer
 {
-    static uint _black = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#141414"));
-    static uint _white = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#FFFFFF"));
-    static uint _whitePressed = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#888888"));
-    static uint _blackPressed = ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#555555"));
+    static uint _black => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#141414"));
+    static uint _white => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#FFFFFF"));
+    static uint _whitePressed => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#888888"));
+    static uint _blackPressed => ImGui.GetColorU32(ImGuiTheme.HtmlToVec4("#555555"));
 
     public static float Width;
     public static float Height;
@@ -21,10 +22,11 @@ public class PianoRenderer
 
     public static Dictionary<SevenBitNumber, int> WhiteNoteToKey = new();
     public static Dictionary<SevenBitNumber, int> BlackNoteToKey = new();
+    public static Dictionary<int, (Vector4 Color, float Alpha)> ApproachingNotes = new();
 
     public static void RenderKeyboard()
     {
-        ImGui.PushFont(FontController.Font16_Icon12);
+        ImGui.PushFont(FontController.GetFontOfSize((int)(18 * FontController.DSF)));
         ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
         P = ImGui.GetCursorScreenPos();
 
@@ -35,6 +37,7 @@ public class PianoRenderer
 
         /* Check if a black key is pressed */
         bool blackKeyClicked = false;
+        bool blackKeyHovered = false;
         for (int key = 0; key < 52; key++)
         {
             if (KeysUtils.HasBlack(key))
@@ -42,9 +45,13 @@ public class PianoRenderer
                 Vector2 min = new(P.X + key * Width + Width * 3 / 4, P.Y);
                 Vector2 max = new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f);
 
-                if (ImGui.IsMouseHoveringRect(min, max) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (ImGui.IsMouseHoveringRect(min, max))
                 {
-                    blackKeyClicked = true;
+                    blackKeyHovered = true;
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    {
+                        blackKeyClicked = true;
+                    }
                 }
 
                 cur_key += 2;
@@ -57,17 +64,26 @@ public class PianoRenderer
 
         cur_key = 21;
         int cCount = 1;
+        string[] _names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
         for (int key = 0; key < 52; key++)
         {
             uint col = _white;
 
-            if (ImGui.IsMouseHoveringRect(new(P.X + key * Width, P.Y), new(P.X + key * Width + Width, P.Y + Height)) && ImGui.IsMouseClicked(ImGuiMouseButton.Left)
-                && !CoreSettings.KeyboardInput && !blackKeyClicked)
+            if (ImGui.IsMouseHoveringRect(new(P.X + key * Width, P.Y), new(P.X + key * Width + Width, P.Y + Height)))
             {
-                // on key mouse press
-                IOHandle.OnEventReceived(null,
-                    new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
-                DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                if (!blackKeyHovered)
+                {
+                    ImGui.SetTooltip($"{_names[cur_key % 12]}{(cur_key / 12) - 1}");
+                }
+
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput && !blackKeyClicked)
+                {
+                    // on key mouse press
+                    IOHandle.OnEventReceived(null,
+                        new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
+                    DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                }
             }
 
             if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
@@ -81,10 +97,17 @@ public class PianoRenderer
                 }
             }
 
-            if (IOHandle.PressedKeys.Contains(cur_key))
+            bool isPressed = IOHandle.PressedKeys.Contains(cur_key);
+            bool isApproaching = ApproachingNotes.TryGetValue(cur_key, out var appInfo);
+
+            if (isPressed || isApproaching)
             {
-                var color = CoreSettings.KeyPressColorMatch ? ImGui.GetColorU32(ThemeManager.RightHandCol) : _whitePressed;
-                col = color;
+                float alpha = isPressed ? 1.0f : appInfo.Alpha;
+                Vector4 rawCol = isApproaching ? appInfo.Color : new Vector4(0.529f, 0.784f, 0.325f, 1f);
+                Vector3 baseCol = Vector3.One;
+                Vector3 targetCol = new Vector3(rawCol.X, rawCol.Y, rawCol.Z);
+                Vector3 lerpedCol = baseCol + (targetCol - baseCol) * alpha;
+                col = ImGui.GetColorU32(new Vector4(lerpedCol, 1.0f));
             }
 
             var offset = IOHandle.PressedKeys.Contains(cur_key) ? 2 : 0;
@@ -93,15 +116,33 @@ public class PianoRenderer
                 new Vector2(P.X + key * Width, P.Y) + new Vector2(offset, 0),
                 new Vector2(P.X + key * Width + Width, P.Y + Height) + new Vector2(offset, 0), Vector2.Zero, Vector2.One, col, 5, ImDrawFlags.RoundCornersBottom);
 
+            if (isApproaching && !isPressed && appInfo.Alpha > 0.6f)
+            {
+                float borderAlpha = (appInfo.Alpha - 0.6f) * 2.5f;
+                uint borderCol = ImGui.GetColorU32(new Vector4(appInfo.Color.X, appInfo.Color.Y, appInfo.Color.Z, borderAlpha));
+                draw_list.AddRect(
+                    new Vector2(P.X + key * Width, P.Y) + new Vector2(offset, 0),
+                    new Vector2(P.X + key * Width + Width, P.Y + Height) + new Vector2(offset, 0),
+                    borderCol, 5, ImDrawFlags.RoundCornersBottom, 3.0f);
+            }
+
             if (WhiteNoteToKey.Count < 52)
                 WhiteNoteToKey.Add((SevenBitNumber)cur_key, key);
 
-            if (key % 7 == 1)
+            var nName = _names[cur_key % 12];
+            var tPos = new Vector2(P.X + key * Width + (Width / 2 - ImGui.CalcTextSize(nName).X / 2), P.Y + Height - 25 * FontController.DSF);
+            ImGui.GetForegroundDrawList().AddText(tPos + new Vector2(1), ImGui.GetColorU32(new Vector4(0,0,0,0.8f)), nName);
+            ImGui.GetForegroundDrawList().AddText(tPos, (isPressed || isApproaching) ? ImGui.GetColorU32(Vector4.One) : _black, nName);
+
+            if (CoreSettings.KeyboardInput)
             {
-                var text = $"C{cCount}";
-                ImGui.GetForegroundDrawList().AddText(new(P.X + key * Width + Width + (Width / 2 - ImGui.CalcTextSize(text).X / 2),
-                    P.Y + Height - 25 * FontController.DSF), _black, text);
-                cCount++;
+                var match = VirtualKeyboard.KeyNoteMap.FirstOrDefault(x => x.Value + VirtualKeyboard.OctaveShift == cur_key);
+                if (match.Key != ImGuiKey.None)
+                {
+                    var ktext = match.Key.ToString();
+                    ImGui.GetForegroundDrawList().AddText(new(P.X + key * Width + (Width / 2 - ImGui.CalcTextSize(ktext).X / 2),
+                        P.Y + Height - 50 * FontController.DSF), _blackPressed, ktext);
+                }
             }
 
             cur_key++;
@@ -122,12 +163,16 @@ public class PianoRenderer
                 uint col = ImGui.GetColorU32(Vector4.One);
 
                 if (ImGui.IsMouseHoveringRect(new(P.X + key * Width + Width * 3 / 4, P.Y),
-                    new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f)) && ImGui.IsMouseClicked(ImGuiMouseButton.Left)
-                    && !CoreSettings.KeyboardInput)
+                    new(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f)))
                 {
-                    IOHandle.OnEventReceived(null,
-                        new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
-                    DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                    ImGui.SetTooltip($"{_names[cur_key % 12]}{(cur_key / 12) - 1}");
+
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
+                    {
+                        IOHandle.OnEventReceived(null,
+                            new Melanchall.DryWetMidi.Multimedia.MidiEventReceivedEventArgs(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127))));
+                        DevicesManager.ODevice?.SendEvent(new NoteOnEvent((SevenBitNumber)cur_key, new SevenBitNumber(127)));
+                    }
                 }
 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !CoreSettings.KeyboardInput)
@@ -140,19 +185,56 @@ public class PianoRenderer
                     }
                 }
 
-                if (IOHandle.PressedKeys.Contains(cur_key))
+                bool isPressed = IOHandle.PressedKeys.Contains(cur_key);
+                bool isApproaching = ApproachingNotes.TryGetValue(cur_key, out var appInfo);
+
+                var blackImage = (isPressed || isApproaching) ? Drawings.CSharpWhite : Drawings.CSharp;
+
+                if (isPressed || isApproaching)
                 {
-                    var v3 = new Vector3(ThemeManager.RightHandCol.X, ThemeManager.RightHandCol.Y, ThemeManager.RightHandCol.Z);
-                    var color = CoreSettings.KeyPressColorMatch ? ImGui.GetColorU32(new Vector4(v3, 1)) : _blackPressed;
-                    col = color;
+                    float alpha = isPressed ? 1.0f : appInfo.Alpha;
+                    Vector4 rawCol = isApproaching ? appInfo.Color : new Vector4(0.529f, 0.784f, 0.325f, 1f);
+                    Vector3 darkGray = new Vector3(0.15f, 0.15f, 0.15f);
+                    Vector3 targetCol = new Vector3(rawCol.X, rawCol.Y, rawCol.Z);
+                    Vector3 lerpedCol = darkGray + (targetCol - darkGray) * alpha;
+                    col = ImGui.GetColorU32(new Vector4(lerpedCol, 1.0f));
+                }
+                else
+                {
+                    col = ImGui.GetColorU32(Vector4.One);
                 }
 
-                var offset = IOHandle.PressedKeys.Contains(cur_key) ? 1 : 0;
-                var blackImage = IOHandle.PressedKeys.Contains(cur_key) ? Drawings.CSharpWhite : Drawings.CSharp;
+                var offset = isPressed ? 1 : 0;
 
                 draw_list.AddImage(blackImage,
                     new Vector2(P.X + key * Width + Width * 3 / 4, P.Y),
                     new Vector2(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f) + new Vector2(offset), Vector2.Zero, Vector2.One, col);
+
+                if (isApproaching && !isPressed && appInfo.Alpha > 0.6f)
+                {
+                    float borderAlpha = (appInfo.Alpha - 0.6f) * 2.5f; 
+                    uint borderCol = ImGui.GetColorU32(new Vector4(appInfo.Color.X, appInfo.Color.Y, appInfo.Color.Z, borderAlpha));
+                    draw_list.AddRect(
+                        new Vector2(P.X + key * Width + Width * 3 / 4, P.Y),
+                        new Vector2(P.X + key * Width + Width * 5 / 4 + 1, P.Y + Height / 1.5f) + new Vector2(offset), 
+                        borderCol, 0, 0, 3.0f);
+                }
+
+                var nName = _names[cur_key % 12];
+                var tPos = new Vector2(P.X + key * Width + Width - ImGui.CalcTextSize(nName).X / 2, P.Y + Height / 1.5f - 25 * FontController.DSF);
+                ImGui.GetForegroundDrawList().AddText(tPos + new Vector2(1), ImGui.GetColorU32(new Vector4(0,0,0,0.8f)), nName);
+                ImGui.GetForegroundDrawList().AddText(tPos, (isPressed || isApproaching) ? ImGui.GetColorU32(Vector4.One) : _white, nName);
+
+                if (CoreSettings.KeyboardInput)
+                {
+                    var match = VirtualKeyboard.KeyNoteMap.FirstOrDefault(x => x.Value + VirtualKeyboard.OctaveShift == cur_key);
+                    if (match.Key != ImGuiKey.None)
+                    {
+                        var ktext = match.Key.ToString();
+                        ImGui.GetForegroundDrawList().AddText(new(P.X + key * Width + Width - ImGui.CalcTextSize(ktext).X / 2,
+                            P.Y + Height / 1.5f - 25 * FontController.DSF), _whitePressed, ktext);
+                    }
+                }
 
                 cur_key += 2;
             }

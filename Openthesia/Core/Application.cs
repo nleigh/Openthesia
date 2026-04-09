@@ -1,5 +1,6 @@
-﻿using Openthesia.Core.Midi;
+using Openthesia.Core.Midi;
 using Openthesia.Ui.Windows;
+using ImGuiNET;
 
 namespace Openthesia.Core;
 
@@ -43,11 +44,26 @@ public class Application
 
     public void OnUpdate()
     {
+        if (MidiPlayer.ShouldAdvanceQueue)
+        {
+            MidiPlayer.ShouldAdvanceQueue = false;
+            string nextFile = SongQueueManager.GetNext();
+            if (nextFile != null)
+            {
+                MidiFileHandler.LoadMidiFile(nextFile);
+                MidiPlayer.Timer = 0;
+                MidiPlayer.Seconds = 0;
+                MidiPlayer.Playback.Start();
+                MidiPlayer.StartTimer();
+            }
+        }
+
         foreach (ImGuiWindow window in GetWindows())
         {
             if (window.Active())
                 window.RenderWindow();
         }
+
         ImGuiController.UpdateMouseCursor();
     }
 

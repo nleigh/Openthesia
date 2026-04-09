@@ -1,8 +1,9 @@
-﻿using Melanchall.DryWetMidi.Multimedia;
+using Melanchall.DryWetMidi.Multimedia;
 using Newtonsoft.Json;
 using Openthesia.Core.Plugins;
 using Openthesia.Core.SoundFonts;
 using Openthesia.Settings;
+using Openthesia.Enums;
 using Syroot.Windows.IO;
 using Vanara.PInvoke;
 
@@ -20,7 +21,8 @@ public static class ProgramData
         Directory.CreateDirectory(Path.Combine(KnownFolders.RoamingAppData.Path, "Openthesia"));
         Directory.CreateDirectory(HandsDataPath);
         LoadSettings();
-        ImGuiTheme.PushTheme();
+        GameStateManager.Initialize();
+        ImGuiTheme.Init();
 
         // Always create the SoundFonts directory if it doesn't exist (this is mainly for when building from source)
         // In a built version it will need admin privileges to create the folder if installed in certain directories (e.g Program Files (x86))
@@ -105,10 +107,6 @@ public static class ProgramData
                 CoreSettings.SetUseVelocityAsNoteOpacity(storedSettings.UseVelocityAsNoteOpacity);
                 CoreSettings.SetFpsCounter(storedSettings.FpsCounter);
                 CoreSettings.SetNoteRoundness(storedSettings.NoteRoundness);
-                ThemeManager.SetTheme(storedSettings.Theme);
-                ThemeManager.MainBgCol = storedSettings.MainBg;
-                ThemeManager.RightHandCol = storedSettings.R_HandColor;
-                ThemeManager.LeftHandCol = storedSettings.L_HandColor;
                 ScreenCanvasControls.SetLockTopBar(storedSettings.LockTopBar);
                 ScreenCanvasControls.SetUpDirection(storedSettings.UpDirection);
                 ScreenCanvasControls.SetTextNotes(storedSettings.ShowTextNotes);
@@ -176,10 +174,6 @@ public static class ProgramData
             UseVelocityAsNoteOpacity = CoreSettings.UseVelocityAsNoteOpacity,
             NoteRoundness = CoreSettings.NoteRoundness,
             FpsCounter = CoreSettings.FpsCounter,
-            Theme = ThemeManager.Theme,
-            MainBg = ThemeManager.MainBgCol,
-            R_HandColor = ThemeManager.RightHandCol,
-            L_HandColor = ThemeManager.LeftHandCol,
             LockTopBar = ScreenCanvasControls.LockTopBar,
             UpDirection = ScreenCanvasControls.UpDirection,
             ShowTextNotes = ScreenCanvasControls.ShowTextNotes,

@@ -1,10 +1,14 @@
-﻿using IconFonts;
+using IconFonts;
 using ImGuiNET;
 using Openthesia.Core;
 using Openthesia.Core.Midi;
 using Openthesia.Settings;
 using Openthesia.Ui.Helpers;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 
 namespace Openthesia.Ui.Windows;
 
@@ -18,7 +22,7 @@ public class ModeSelectionWindow : ImGuiWindow
 
     public static void RenderContainer()
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ThemeManager.MainBgCol * 0.8f);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.192f, 0.192f, 0.192f, 1f) * 0.8f);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildBorderSize, 2f);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 10f);
         ImGui.SetNextWindowPos(new((ImGui.GetIO().DisplaySize.X - ImGui.GetIO().DisplaySize.X / 1.2f) / 2, ImGuiUtils.FixedSize(new Vector2(120)).Y));
@@ -101,8 +105,9 @@ public class ModeSelectionWindow : ImGuiWindow
         ImGuiTheme.PopButton();
     }
 
-    private static void SetupMode(bool learningMode, bool editMode)
+    public static void SetupMode(bool learningMode, bool editMode)
     {
+        AccuracyScoring.StartSession();
         ScreenCanvasControls.SetLearningMode(learningMode);
         ScreenCanvasControls.SetEditMode(editMode);
         
@@ -113,22 +118,47 @@ public class ModeSelectionWindow : ImGuiWindow
         }
         MidiEditing.ReadData();
 
-        // Map each note (possibly multiple at the same time/number) to its indices in the MIDI file
+        // Note index map for visual highlight lookup
         LeftRightData.S_NoteIndexMap = new Dictionary<string, List<int>>();
-
         foreach (var (note, i) in MidiFileData.Notes.Select((note, i) => (note, i)))
         {
-            // Build a stable composite key
             var key = $"{note.NoteNumber}_{note.Time}";
-
-            // Create or append to the list
             if (!LeftRightData.S_NoteIndexMap.TryGetValue(key, out var indexList))
             {
                 indexList = new List<int>();
                 LeftRightData.S_NoteIndexMap[key] = indexList;
             }
-
             indexList.Add(i);
+        }
+
+        // Mapping logic for hand muting in IOHandle
+        LeftRightData.S_EventHandMap.Clear();
+        var allNotes = MidiFileData.Notes.ToList();
+        
+        var noteOnHandMap = new Dictionary<(int noteNumber, long time), bool>();
+        var noteOffHandMap = new Dictionary<(int noteNumber, long time), bool>();
+        
+        for (int j = 0; j < allNotes.Count; j++)
+        {
+            var n = allNotes[j];
+            bool isRight = (j < LeftRightData.S_IsRightNote.Count) ? LeftRightData.S_IsRightNote[j] : true;
+            noteOnHandMap[(n.NoteNumber, n.Time)] = isRight;
+            noteOffHandMap[(n.NoteNumber, n.Time + n.Length)] = isRight;
+        }
+
+        // Map the actual MidiEvent instances to hands
+        foreach (var timedEvent in MidiFileData.MidiFile.GetTimedEvents())
+        {
+            if (timedEvent.Event is NoteOnEvent noteOn)
+            {
+                if (noteOnHandMap.TryGetValue((noteOn.NoteNumber, timedEvent.Time), out bool isRight))
+                    LeftRightData.S_EventHandMap[noteOn] = isRight;
+            }
+            else if (timedEvent.Event is NoteOffEvent noteOff)
+            {
+                if (noteOffHandMap.TryGetValue((noteOff.NoteNumber, timedEvent.Time), out bool isRight))
+                    LeftRightData.S_EventHandMap[noteOff] = isRight;
+            }
         }
 
         WindowsManager.SetWindow(Enums.Windows.MidiPlayback);
